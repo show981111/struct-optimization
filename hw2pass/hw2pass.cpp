@@ -43,12 +43,13 @@
 #include <unordered_map>
 #include <iterator>
 #include <unordered_set>
-/* *******Implementation Starts Here******* */
-// You can include more Header files here
-/* *******Implementation Ends Here******* */
 
 using namespace llvm;
 
+/**
+ * Useful links:
+ * https://llvm.org/docs/GetElementPtr.html
+ */
 namespace
 {
   struct Stat
