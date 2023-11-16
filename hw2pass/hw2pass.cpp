@@ -36,6 +36,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/IR/DerivedTypes.h"
 
 #include <string>
 #include <vector>
@@ -50,27 +51,55 @@ using namespace llvm;
 
 namespace
 {
-  std::unordered_map<std::string, std::unordered_map<unsigned, unsigned>> MemberAccessCounts;
+  struct Stat
+  {
+    u_int64_t accessCounts;
+    Type *type;
+  };
+  // structName -> member field index -> Stat(accessCounts, type)
+  /**
+   * Useful API of Type
+   * ty->isStructTy()
+   * ty->getStructName().str()
+   * ty->getTypeID()
+   */
+  std::unordered_map<std::string, std::unordered_map<unsigned, Stat>> memberAccessCounts;
 
-  void analyzePtr(GetElementPtrInst *GEP)
+  void analyzePtr(GetElementPtrInst *GEP, uint64_t numExecuted)
   {
     if (GEP->getSourceElementType()->isStructTy())
     {
       std::string structName = GEP->getSourceElementType()->getStructName().str();
       // Get the structure type
       StructType *StructTy = cast<StructType>(GEP->getSourceElementType());
-      errs() << *StructTy << "\n";
+      // errs() << *StructTy << "\n";
+      if (memberAccessCounts.count(structName) == 0)
+      {
+        int numFields = StructTy->getNumElements();
+        for (int i = 0; i < numFields; i++)
+        {
+          Type *ty = StructTy->getTypeAtIndex(i);
+          memberAccessCounts[structName][i].type = ty;
+          memberAccessCounts[structName][i].accessCounts = 0;
+          // if (ty->isStructTy())
+          //   errs() << ty->getStructName().str();
+          // else
+          //   errs() << ty->getTypeID();
+        }
+      }
 
+      // StructTy->
       Value *Operand = GEP->getOperand(GEP->getNumOperands() - 1);
       ConstantInt *Index = dyn_cast<ConstantInt>(Operand);
       if (Index)
       {
         // Extract the integer value
         int IndexValue = Index->getSExtValue();
-
+        // memberAccessCounts[structName][IndexValue].typeName =
+        StructTy->getTypeAtIndex(IndexValue)->print(errs());
         // Now, IndexValue contains the value (in this case, 3)
-        errs() << "Extracted index value: " << IndexValue << "\n";
-        MemberAccessCounts[structName][IndexValue]++;
+        errs() << " Extracted index value: " << IndexValue << "\n";
+        memberAccessCounts[structName][IndexValue].accessCounts += numExecuted;
       }
     }
   }
@@ -79,12 +108,12 @@ namespace
   void printResults()
   {
     errs() << "Struct Member Access Counts:\n";
-    for (const auto &StructEntry : MemberAccessCounts)
+    for (const auto &StructEntry : memberAccessCounts)
     {
       errs() << "Struct: " << StructEntry.first << "\n";
       for (const auto &MemberEntry : StructEntry.second)
       {
-        errs() << "  Member " << MemberEntry.first << ": " << MemberEntry.second << " times\n";
+        errs() << "  Member " << MemberEntry.first << ": " << MemberEntry.second.accessCounts << " times, Type: " << *MemberEntry.second.type << "\n";
       }
     }
   }
@@ -104,13 +133,23 @@ namespace
       errs() << "Running a Pass\n";
       for (auto &BB : F)
       {
+        uint64_t numExecuted = 0;
+        if (bfi.getBlockProfileCount(&BB).has_value())
+        {
+          // https://llvm.org/doxygen/BlockFrequencyInfo_8h_source.html get how many times this BB got executed
+          numExecuted = bfi.getBlockProfileCount(&BB).value();
+        }
+
+        if (numExecuted == 0)
+          continue;
+
         for (auto &I : BB)
         {
           if (std::string(I.getOpcodeName()) == "getelementptr")
           {
             GetElementPtrInst *ptrInst = dyn_cast<GetElementPtrInst>(&I);
             errs() << I << "\n";
-            analyzePtr(ptrInst);
+            analyzePtr(ptrInst, numExecuted);
           }
         }
       }
