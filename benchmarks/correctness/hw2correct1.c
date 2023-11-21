@@ -23,8 +23,9 @@ int main()
 	// }
 
 	Test t;
-	t.a = 123;
+	t.b = 5; 
 	t.d = 'c';
+	t.a = 123;
 	t.e = 3123;
 
 	int x = t.a;

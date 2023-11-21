@@ -4,7 +4,7 @@
 # e.g. sh run.sh hw2correct1
 
 # ACTION NEEDED: If the path is different, please update it here.
-PATH2LIB="/home/leeyongs/proj/build/hw2pass/HW2Pass.so"        # Specify your build directory in the project
+PATH2LIB="/home/willruiz/struct-profiler/build/hw2pass/HW2Pass.so"        # Specify your build directory in the project
 
 # ACTION NEEDED: Choose the correct pass when running.
 PASS=fplicm-correctness                   # Choose either -fplicm-correctness ...
