@@ -211,10 +211,7 @@ namespace
       // Key: id/name of the struct, Value: vector of pairs of Id and type (sorted by hits)
 
       // A, B, C, D, E
-
-
       
-
       for (auto &e : sortedMemberVariables) {
         std::string ogStructName = e.first;
         errs() << "e.second size: " << std::to_string(e.second.size()) << "\n";
