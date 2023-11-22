@@ -37,6 +37,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <string>
 #include <vector>
@@ -64,6 +66,8 @@ namespace
    * ty->getStructName().str()
    * ty->getTypeID()
    */
+  std::unordered_map<std::string, StructType *> structs;
+  std::unordered_map<std::string, std::vector<int>> fieldIndexMapping;
   std::unordered_map<std::string, std::unordered_map<unsigned, Stat>> memberAccessCounts;
   std::unordered_map<std::string, std::vector<std::pair<unsigned, Stat>>> sortedMemberVariables;
   std::unordered_map<std::string, std::unordered_map<unsigned, std::string>> subStructMap;
@@ -75,19 +79,16 @@ namespace
       std::string structName = GEP->getSourceElementType()->getStructName().str();
       // Get the structure type
       StructType *StructTy = cast<StructType>(GEP->getSourceElementType());
-      errs() << *StructTy << "\n";
       if (memberAccessCounts.count(structName) == 0)
       {
+        errs() << *StructTy << "\n";
+        structs[structName] = StructTy;
         int numFields = StructTy->getNumElements();
         for (int i = 0; i < numFields; i++)
         {
           Type *ty = StructTy->getTypeAtIndex(i);
           memberAccessCounts[structName][i].type = ty;
           memberAccessCounts[structName][i].accessCounts = 0;
-          // if (ty->isStructTy())
-          //   errs() << ty->getStructName().str();
-          // else
-          //   errs() << ty->getTypeID();
         }
       }
 
@@ -107,6 +108,43 @@ namespace
     }
   }
 
+  void reOrgStruct()
+  {
+    for (auto &st : structs)
+    {
+      if (!st.second->isOpaque())
+      {
+        std::string structName = st.first;
+        std::vector<Type *> sortedFields;
+        std::vector<int> fieldMap(sortedMemberVariables[structName].size());
+        for (std::pair<unsigned, Stat> &item : sortedMemberVariables[structName])
+        {
+          fieldMap[item.first] = sortedFields.size();
+          sortedFields.push_back(item.second.type);
+        }
+        fieldIndexMapping[structName] = std::move(fieldMap);
+        st.second->setBody(sortedFields);
+      }
+    }
+  }
+
+  void fixUses(GetElementPtrInst *GEP)
+  {
+    if (GEP->getSourceElementType()->isStructTy())
+    {
+      std::string structName = GEP->getSourceElementType()->getStructName().str();
+      IRBuilder<> Builder(GEP->getContext());
+      Value *Operand = GEP->getOperand(GEP->getNumOperands() - 1);
+      ConstantInt *Index = dyn_cast<ConstantInt>(Operand);
+      errs() << *GEP << " AND " << *Index << " " << fieldIndexMapping[structName].size() << " " << Index->getBitWidth() << "\n";
+      int newIndex = fieldIndexMapping[structName][Index->getSExtValue()];
+      if (Index->getBitWidth() == 32)
+      {
+        GEP->setOperand(GEP->getNumOperands() - 1, Builder.getInt32(newIndex));
+      }
+    }
+  }
+
   // Print the analysis results
   void printResults()
   {
@@ -121,21 +159,22 @@ namespace
     }
   }
 
-  //std::unordered_map<std::string, std::unordered_map<unsigned, std::string>> subStructMap;
+  // std::unordered_map<std::string, std::unordered_map<unsigned, std::string>> subStructMap;
 
-  void printSubstructs(){
-    for (auto &i : subStructMap){
+  void printSubstructs()
+  {
+    for (auto &i : subStructMap)
+    {
       errs() << "OG Struct: " << i.first << "\n";
-      for (auto &j : i.second){
+      for (auto &j : i.second)
+      {
         errs() << "member variable ID: " << std::to_string(j.first) << ", SubStruct Name: " << j.second << "\n";
       }
     }
   }
 
-
   struct HW2CorrectnessPass : public PassInfoMixin<HW2CorrectnessPass>
   {
-
     PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM)
     {
       llvm::BlockFrequencyAnalysis::Result &bfi = FAM.getResult<BlockFrequencyAnalysis>(F);
@@ -149,9 +188,11 @@ namespace
       errs() << "Running a Pass\n";
 
       // 1. Generating Profile data
-      for (auto &BB : F) {
+      for (auto &BB : F)
+      {
         uint64_t numExecuted = 0;
-        if (bfi.getBlockProfileCount(&BB).has_value()) {
+        if (bfi.getBlockProfileCount(&BB).has_value())
+        {
           // https://llvm.org/doxygen/BlockFrequencyInfo_8h_source.html get how many times this BB got executed
           numExecuted = bfi.getBlockProfileCount(&BB).value();
         }
@@ -164,7 +205,7 @@ namespace
           if (std::string(I.getOpcodeName()) == "getelementptr")
           {
             GetElementPtrInst *ptrInst = dyn_cast<GetElementPtrInst>(&I);
-            //errs() << I << "\n";
+            // errs() << I << "\n";
             analyzePtr(ptrInst, numExecuted);
           }
         }
@@ -177,32 +218,32 @@ namespace
       // Create a vector to store the key-value pairs
 
       // Key: id/name of the struct, Value: vector of pairs of Id and type (sorted by hits)
-      
 
       // e -> a map for each struct
-      for (auto &e : memberAccessCounts) {
-        //s -> id and Stat
-        // errs() <<"CHECK: " << e.first << "\n";
+      for (auto &e : memberAccessCounts)
+      {
+        // s -> id and Stat
+        //  errs() <<"CHECK: " << e.first << "\n";
         std::string structName = e.first;
         std::vector<std::pair<unsigned, Stat>> vec;
 
-        for(auto &s : e.second) { 
+        for (auto &s : e.second)
+        {
           // errs() <<"CHECK: " << s.first << "\n";
           vec.push_back({s.first, s.second});
         }
 
-        std::sort(vec.begin(), vec.end(), [](const auto &a, const auto &b) {
-          return a.second.accessCounts > b.second.accessCounts;
-        });
-        
+        std::sort(vec.begin(), vec.end(), [](const auto &a, const auto &b)
+                  { return a.second.accessCounts > b.second.accessCounts; });
+
         sortedMemberVariables[structName] = vec;
       }
 
       // Step 2: We want to split our struct into smaller struct groups
-      //Output: Key : id/name of the struct, Value: Map<Key: member variable ID, Value: subStruct name>
+      // Output: Key : id/name of the struct, Value: Map<Key: member variable ID, Value: subStruct name>
       // Into 3 structs
 
-      // A -> a, b, c, d 
+      // A -> a, b, c, d
       // ceil = 3 {ssID = 0,1,2}
       // super struct A -> <{0,0}, {1,1}, c {2}, d {1}, e{0}>
       //{ {(0,A_1),(1,A_2)}, {(1, B_3){3, B_2},  }
@@ -211,28 +252,32 @@ namespace
       // Key: id/name of the struct, Value: vector of pairs of Id and type (sorted by hits)
 
       // A, B, C, D, E
-      
-      for (auto &e : sortedMemberVariables) {
+
+      for (auto &e : sortedMemberVariables)
+      {
         std::string ogStructName = e.first;
         errs() << "e.second size: " << std::to_string(e.second.size()) << "\n";
-        int mvCount = std::ceil((double)e.second.size() / (double) 3);
+        int mvCount = std::ceil((double)e.second.size() / (double)3);
         errs() << "mvCount: " << std::to_string(mvCount) << "\n";
 
         std::unordered_map<unsigned, std::string> valueMap;
         int struct_idx = 0;
         int nameIdx = 0;
 
-        while(struct_idx < e.second.size() ) { // e.second = vector representing the super struct A
+        while (struct_idx < e.second.size())
+        { // e.second = vector representing the super struct A
           int sub_idx = 0;
-          
-          while(sub_idx < mvCount) {
-            //err() << std::to_string(sub_idx);
+
+          while (sub_idx < mvCount)
+          {
+            // err() << std::to_string(sub_idx);
             std::string newStructName = ogStructName + "_" + std::to_string(nameIdx);
             valueMap[e.second[struct_idx].first] = newStructName;
             ++sub_idx;
             ++struct_idx;
             errs() << "nameIdx: " << std::to_string(nameIdx) << "\n";
-            if(struct_idx >= e.second.size()) {
+            if (struct_idx >= e.second.size())
+            {
               break;
             }
           }
@@ -241,76 +286,92 @@ namespace
         }
         subStructMap[ogStructName] = valueMap;
       }
-      
-      // for (auto i = memberAccessCounts.begin(); i != memberAccessCounts.end(); ++i){
-      //   std::vector<std::pair<unsigned, Stat>> vec (s->second.begin(), s->second.end());
-      //     std::sort(vec.begin(), vec.end(), [](const auto &a, const auto &b) {
-      //       return a.second.accessCounts < b.second.accessCounts;
-      //     });
-      // }
-
-      // Sort the vector based on the values
-
-      // int curr_total_count = 0;
-      // int top_heuristic = 0;
-      // for (auto i : memberAccessCounts) {
-      //   curr_total_count = i.size();
-      //   for (auto j : i) {
-      //     j.accessCounts
-      //   }
-      // }
 
       printResults();
       printSubstructs();
-      /* *******Implementation Ends Here******* */
-      // Your pass is modifying the source code. Figure out which analyses
-      // are preserved and only return those, not all.
+      reOrgStruct();
 
-      // Indicate that LoopInfo is preserved
-      PreservedAnalyses PA;
-      PA.preserve<LoopAnalysis>();
-      return PA;
-    }
-  };
-  struct HW2PerformancePass : public PassInfoMixin<HW2PerformancePass>
-  {
-    PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM)
-    {
-      llvm::BlockFrequencyAnalysis::Result &bfi = FAM.getResult<BlockFrequencyAnalysis>(F);
-      llvm::BranchProbabilityAnalysis::Result &bpi = FAM.getResult<BranchProbabilityAnalysis>(F);
-      llvm::LoopAnalysis::Result &li = FAM.getResult<LoopAnalysis>(F);
-      /* *******Implementation Starts Here******* */
-      // This is a bonus. You do not need to attempt this to receive full credit.
-      /* *******Implementation Ends Here******* */
+      for (auto &BB : F)
+      {
+        for (auto &I : BB)
+        {
+          if (std::string(I.getOpcodeName()) == "getelementptr")
+          {
+            GetElementPtrInst *ptrInst = dyn_cast<GetElementPtrInst>(&I);
+            fixUses(ptrInst);
+          }
+        }
+      }
 
-      // Your pass is modifying the source code. Figure out which analyses
-      // are preserved and only return those, not all.
       return PreservedAnalyses::all();
     }
   };
 
-  extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK llvmGetPassPluginInfo()
-  {
-    return {
-        LLVM_PLUGIN_API_VERSION, "HW2Pass", "v0.1",
-        [](PassBuilder &PB)
-        {
-          PB.registerPipelineParsingCallback(
-              [](StringRef Name, FunctionPassManager &FPM,
-                 ArrayRef<PassBuilder::PipelineElement>)
+  // // Define a new struct declaration pass
+  // class AddStructDeclarationPass : public PassInfoMixin<AddStructDeclarationPass>
+  // {
+  // public:
+  //   // Entry point for the pass
+  //   PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM)
+  //   {
+  //     LLVMContext &Context = M.getContext();
+  //     // Create a new struct type (you can customize this based on your needs)
+  //     Type *IntType = Type::getInt32Ty(Context);
+  //     Type *FloatType = Type::getFloatTy(Context);
+  //     Type *DoubleType = Type::getDoubleTy(Context);
+
+  //     std::vector<Type *> StructMembers = {IntType, FloatType, DoubleType};
+  //     StructType *MyStructType = StructType::create(Context, StructMembers, "MyStruct");
+
+  //     // Print information about the created struct
+  //     errs() << "Created struct type: " << *MyStructType << "\n";
+
+  //     // Create an IRBuilder for inserting instructions
+  //     // IRBuilder<> Builder(Context);
+
+  //     // // You can use the struct type to create a variable of that type
+  //     // Value *MyStructVariable = Builder.CreateAlloca(MyStructType, nullptr, "myStructVar");
+
+  //     // // Print information about the created variable
+  //     // errs() << "Created struct variable: " << *MyStructVariable << "\n";
+
+  //     // // Emit LLVM IR for the module
+  //     // M.print(outs(), nullptr);
+
+  //     return PreservedAnalyses::all(); // This pass doesn't modify the module
+  //   }
+  // };
+}
+
+extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK llvmGetPassPluginInfo()
+{
+  return {
+      LLVM_PLUGIN_API_VERSION, "HW2Pass", "v0.1",
+      [](PassBuilder &PB)
+      {
+        PB.registerPipelineParsingCallback(
+            [](StringRef Name, FunctionPassManager &FPM,
+               ArrayRef<PassBuilder::PipelineElement>)
+            {
+              if (Name == "fplicm-correctness")
               {
-                if (Name == "fplicm-correctness")
-                {
-                  FPM.addPass(HW2CorrectnessPass());
-                  return true;
-                }
-                if (Name == "fplicm-performance")
-                {
-                  FPM.addPass(HW2PerformancePass());
-                  return true;
-                }
-                return false;
-              });
-        }};
-  }
+                FPM.addPass(HW2CorrectnessPass());
+
+                return true;
+              }
+              return false;
+            });
+        // PB.registerModulePass<AddStructDeclarationPass>("my-module-pass", "My Module Pass", false, false);
+
+        // PB.registerPipelineParsingCallback(
+        //     [](StringRef Name, ModulePassManager &MPM,
+        //        ...)
+        //     {
+        //       if(Name == "fplicm-correctness")
+        //       {
+        //         MPM.addPass( AddStructDeclarationPass());
+        //         return true;
+        //       }
+        //       return false; });
+      }};
 }

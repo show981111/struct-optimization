@@ -2,16 +2,17 @@
 # Run script for Homework 2 EECS 583 Fall 2023
 # Place this script in the benchmarks folder and run it using the name of the file (without the file type)
 # e.g. sh run.sh hw2correct1
+UNIQUENAME="leeyongs"
 
 # ACTION NEEDED: If the path is different, please update it here.
-PATH2LIB="/home/willruiz/struct-profiler/build/hw2pass/HW2Pass.so"        # Specify your build directory in the project
+PATH2LIB="/home/$UNIQUENAME/proj/build/hw2pass/HW2Pass.so"        # Specify your build directory in the project
 
 # ACTION NEEDED: Choose the correct pass when running.
 PASS=fplicm-correctness                   # Choose either -fplicm-correctness ...
 # PASS=fplicm-performance                 # ... or -fplicm-performance
 
 # Delete outputs from previous runs. Update this when you want to retain some files.
-rm -f default.profraw *_prof *_fplicm *.bc *.profdata *_output *.ll
+rm -f default.profraw *_prof *_fplicm *.bc *.profdata *_output *.ll cachegrind.*
 
 # Convert source code to bitcode (IR).
 clang -emit-llvm -c ${1}.c -Xclang -disable-O0-optnone -o ${1}.bc
@@ -37,6 +38,7 @@ llvm-profdata merge -o ${1}.profdata default.profraw
 # The "Profile Guided Optimization Use" pass attaches the profile data to the bc file.
 opt -passes="pgo-instr-use" -o ${1}.profdata.bc -pgo-test-profile-file=${1}.profdata < ${1}.ls.prof.bc > /dev/null
 
+
 # We now use the profile augmented bc file as input to your pass.
 opt -load-pass-plugin="${PATH2LIB}" -passes="${PASS}" ${1}.profdata.bc -o ${1}.fplicm.bc > /dev/null
 
@@ -47,6 +49,9 @@ clang ${1}.fplicm.bc -o ${1}_fplicm
 
 # Produce output from binary to check correctness
 ./${1}_fplicm > fplicm_output
+
+# Uncomment this and disable the cleanup if you want to "see" the instumented IR.
+llvm-dis ${1}.fplicm.bc -o ${1}.fplicm.ll
 
 echo -e "\n=== Program Correctness Validation ==="
 if [ "$(diff correct_output fplicm_output)" != "" ]; then
