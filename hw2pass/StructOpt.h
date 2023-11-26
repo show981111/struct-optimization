@@ -18,7 +18,16 @@ private:
         MemberIndex index;
         std::string substructName;
     };
+    /**
+     * Test -> Test_0 : <int ,long ,int>
+     *      -> Test_1 : <int, char,long,long >
+     */
     std::unordered_map<std::string, std::unordered_map<std::string, StructInfo>> subStructMap;
+    /**
+     * Test -> 0 -> 1(new Index in substruct), Test_0 (Name of new substruct)
+     *      -> 1 -> 0(new Index in substruct), Test_1 (Name of new substruct)
+     *      -> 2
+     */
     std::unordered_map<std::string, std::unordered_map<MemberIndex, MemberDetail>> memberToSubstruct;
     std::unordered_map<AllocaInst *, std::unordered_map<std::string, AllocaInst *>> originalInstanceToNewInstances;
 
@@ -49,8 +58,11 @@ public:
     void createSubStructMap(DataLayout &dataLayout);
 
     void printSubStructMap();
+
     void addStructDeclaration(Module &M, LLVMContext &Context);
     void addNewInstanceDeclaration(Module &M, LLVMContext &Context);
-
     void fixUsagesOfInstance();
+
+    // void addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context);
+    // void fixArrayInstanceUsage();
 };

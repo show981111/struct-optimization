@@ -54,6 +54,7 @@ clang ${1}.fplicm.bc -o ${1}_fplicm
 
 # Uncomment this and disable the cleanup if you want to "see" the instumented IR.
 llvm-dis ${1}.fplicm.bc -o ${1}.fplicm.ll
+llvm-dis ${1}.profdata.bc -o ${1}.ls.ll
 
 echo -e "\n=== Program Correctness Validation ==="
 if [ "$(diff correct_output fplicm_output)" != "" ]; then

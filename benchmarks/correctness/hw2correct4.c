@@ -1,19 +1,28 @@
 #include <stdio.h>
+#include <stdlib.h>
+typedef struct
+{
+	int a;
+	int b;
+	int e[100];
+	long c;
+	char d;
+	long f;
+	long g;
+	long h;
+} Test;
 
-int main(){
-	int A[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-	int B[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	int i, j;
-	j = 0;
-	for(i = 0; i < 10; i++) {
-  		B[i] = A[j] * 3 * 5 + i;
-  		if (i % 7 == 0){
-  			if (i % 2 == 0)
-  				j = i;
-  			else
-  				j = i + 1;	
-  		} 
-		printf("%d\n", B[i]);
+int main()
+{
+	Test *t = (Test *)malloc(sizeof(Test));
+
+	for (int i = 0; i < 10; i++)
+	{
+		t->a = 10;		 // => arr_1[i]->a = 10;
+		t->d = t->a + 3; // => arr_2[i]->c = arr_1[i]->a + 3;
+		t->e[3] = 12;
 	}
+
+	printf("%d %d %d", t->a, t->d, t->e[3]);
 	return 0;
 }
