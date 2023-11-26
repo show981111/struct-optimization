@@ -42,6 +42,7 @@ opt -passes="pgo-instr-use" -o ${1}.profdata.bc -pgo-test-profile-file=${1}.prof
 # We now use the profile augmented bc file as input to your pass.
 opt -load-pass-plugin="${PATH2LIB}" -passes="${PASS}" ${1}.profdata.bc -o ${1}.fplicm.bc > /dev/null
 # opt -load-pass-plugin="${PATH2LIB}" -passes="create-struct-pass" ${1}.profdata.bc -o ${1}.fplicm.bc > /dev/null
+opt -passes="dce" ${1}.fplicm.bc -o ${1}.fplicm.bc > /dev/null
 
 # Generate binary excutable before FPLICM: Unoptimzed code
 clang ${1}.ls.bc -o ${1}_no_fplicm 

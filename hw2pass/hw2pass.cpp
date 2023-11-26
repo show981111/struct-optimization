@@ -44,13 +44,13 @@ namespace
       opt.profiler.printResult();
 
       // Field Reordering
-      for (Function &F : M)
-      {
-        if (!F.isDeclaration())
-        {
-          opt.structReordering(F);
-        }
-      }
+      // for (Function &F : M)
+      // {
+      //   if (!F.isDeclaration())
+      //   {
+      //     opt.structReordering(F);
+      //   }
+      // }
 
       errs() << "*** Field Reordering Done ***\n";
 

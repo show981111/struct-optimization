@@ -10,6 +10,16 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
         {
             StructType *StructTy = cast<StructType>(allocInst->getAllocatedType());
             structInstances[StructTy->getStructName().str()].insert(allocInst);
+            errs() << "Usage of " << *allocInst << "\n";
+            for (auto U : allocInst->users())
+            {
+                errs() << " Heelo \n";
+                if (auto usingInst = dyn_cast<Instruction>(U))
+                {
+                    errs() << *usingInst << "\n";
+                }
+            }
+            errs() << "----\n";
         }
     }
     if (std::string(I.getOpcodeName()) != "getelementptr")

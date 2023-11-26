@@ -5,8 +5,6 @@ target triple = "x86_64-unknown-linux-gnu"
 
 %struct.Test_1 = type { i64, i32 }
 %struct.Test_0 = type { i32, i8, [100 x i32] }
-%struct.Test = type { i32, i8, [100 x i32], i64, i32 }
-%struct.Test1 = type { i32, i32 }
 
 $__llvm_profile_raw_version = comdat any
 
@@ -28,53 +26,50 @@ define dso_local i32 @main() #0 !prof !35 {
   %1 = add i64 %pgocount, 1
   store i64 %1, ptr getelementptr inbounds ([2 x i64], ptr @__profc_main, i32 0, i32 1), align 8
   %2 = alloca i32, align 4
-  %3 = alloca %struct.Test_1, align 8
-  %4 = alloca %struct.Test_0, align 4
-  %5 = alloca %struct.Test, align 8
-  %6 = alloca %struct.Test1, align 4
-  %7 = alloca i32, align 4
+  %3 = alloca %struct.Test_0, align 4
+  %4 = alloca i32, align 4
   store i32 0, ptr %2, align 4
-  store i32 0, ptr %7, align 4
-  br label %8
+  store i32 0, ptr %4, align 4
+  br label %5
 
-8:                                                ; preds = %20, %0
-  %9 = load i32, ptr %7, align 4
-  %10 = icmp slt i32 %9, 10
-  br i1 %10, label %11, label %24, !prof !36
+5:                                                ; preds = %17, %0
+  %6 = load i32, ptr %4, align 4
+  %7 = icmp slt i32 %6, 10
+  br i1 %7, label %8, label %21, !prof !36
 
-11:                                               ; preds = %8
-  %12 = getelementptr inbounds %struct.Test, ptr %5, i32 0, i32 0
-  store i32 10, ptr %12, align 8
-  %13 = getelementptr inbounds %struct.Test, ptr %5, i32 0, i32 0
-  %14 = load i32, ptr %13, align 8
-  %15 = add nsw i32 %14, 3
-  %16 = trunc i32 %15 to i8
-  %17 = getelementptr inbounds %struct.Test, ptr %5, i32 0, i32 1
-  store i8 %16, ptr %17, align 8
-  %18 = getelementptr inbounds %struct.Test, ptr %5, i32 0, i32 2
-  %19 = getelementptr inbounds [100 x i32], ptr %18, i64 0, i64 3
-  store i32 12, ptr %19, align 4
-  br label %20
+8:                                                ; preds = %5
+  %9 = getelementptr inbounds %struct.Test_0, ptr %3, i32 0, i32 0
+  store i32 10, ptr %9, align 8
+  %10 = getelementptr inbounds %struct.Test_0, ptr %3, i32 0, i32 0
+  %11 = load i32, ptr %10, align 8
+  %12 = add nsw i32 %11, 3
+  %13 = trunc i32 %12 to i8
+  %14 = getelementptr inbounds %struct.Test_0, ptr %3, i32 0, i32 1
+  store i8 %13, ptr %14, align 8
+  %15 = getelementptr inbounds %struct.Test_0, ptr %3, i32 0, i32 2
+  %16 = getelementptr inbounds [100 x i32], ptr %15, i64 0, i64 3
+  store i32 12, ptr %16, align 4
+  br label %17
 
-20:                                               ; preds = %11
+17:                                               ; preds = %8
   %pgocount1 = load i64, ptr @__profc_main, align 8
-  %21 = add i64 %pgocount1, 1
-  store i64 %21, ptr @__profc_main, align 8
-  %22 = load i32, ptr %7, align 4
-  %23 = add nsw i32 %22, 1
-  store i32 %23, ptr %7, align 4
-  br label %8, !llvm.loop !37
+  %18 = add i64 %pgocount1, 1
+  store i64 %18, ptr @__profc_main, align 8
+  %19 = load i32, ptr %4, align 4
+  %20 = add nsw i32 %19, 1
+  store i32 %20, ptr %4, align 4
+  br label %5, !llvm.loop !37
 
-24:                                               ; preds = %8
-  %25 = getelementptr inbounds %struct.Test, ptr %5, i32 0, i32 0
-  %26 = load i32, ptr %25, align 8
-  %27 = getelementptr inbounds %struct.Test, ptr %5, i32 0, i32 1
-  %28 = load i8, ptr %27, align 8
-  %29 = sext i8 %28 to i32
-  %30 = getelementptr inbounds %struct.Test, ptr %5, i32 0, i32 2
-  %31 = getelementptr inbounds [100 x i32], ptr %30, i64 0, i64 3
-  %32 = load i32, ptr %31, align 4
-  %33 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %26, i32 noundef %29, i32 noundef %32)
+21:                                               ; preds = %5
+  %22 = getelementptr inbounds %struct.Test_0, ptr %3, i32 0, i32 0
+  %23 = load i32, ptr %22, align 8
+  %24 = getelementptr inbounds %struct.Test_0, ptr %3, i32 0, i32 1
+  %25 = load i8, ptr %24, align 8
+  %26 = sext i8 %25 to i32
+  %27 = getelementptr inbounds %struct.Test_0, ptr %3, i32 0, i32 2
+  %28 = getelementptr inbounds [100 x i32], ptr %27, i64 0, i64 3
+  %29 = load i32, ptr %28, align 4
+  %30 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %23, i32 noundef %26, i32 noundef %29)
   ret i32 0
 }
 

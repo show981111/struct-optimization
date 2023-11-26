@@ -13,9 +13,14 @@ private:
         uint64_t alignment;
         std::vector<Type *> members;
     };
+    struct MemberDetail
+    {
+        MemberIndex index;
+        std::string substructName;
+    };
     std::unordered_map<std::string, std::unordered_map<std::string, StructInfo>> subStructMap;
-    std::unordered_map<std::string, std::unordered_map<MemberIndex, std::string>> memberToSubstruct;
-    std::unordered_map<AllocaInst *, std::vector<AllocaInst *>> originalInstanceToNewInstances;
+    std::unordered_map<std::string, std::unordered_map<MemberIndex, MemberDetail>> memberToSubstruct;
+    std::unordered_map<AllocaInst *, std::unordered_map<std::string, AllocaInst *>> originalInstanceToNewInstances;
 
     /**
      * Create the new ordering of members in struct.
@@ -29,6 +34,7 @@ private:
      */
     std::unordered_map<std::string, std::vector<int>> getNewOrderOfStruct();
     void fixIndicesBasedOnNewOrder(GetElementPtrInst *GEP, std::unordered_map<std::string, std::vector<int>> &);
+    static void SetIndexOffsetOfGEP(unsigned int operandIndex, unsigned int newIndex, GetElementPtrInst *GEP, IRBuilder<> &Builder);
 
 public:
     Profiler profiler;
