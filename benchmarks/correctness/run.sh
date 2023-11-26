@@ -8,7 +8,7 @@ UNIQUENAME="leeyongs"
 PATH2LIB="/home/$UNIQUENAME/proj/build/hw2pass/HW2Pass.so"        # Specify your build directory in the project
 
 # ACTION NEEDED: Choose the correct pass when running.
-PASS=fplicm-correctness            # Choose either -fplicm-correctness ...
+PASS=struct-optimization                  # Choose either -fplicm-correctness ...
 # PASS=fplicm-performance                 # ... or -fplicm-performance
 
 # Delete outputs from previous runs. Update this when you want to retain some files.
@@ -40,8 +40,8 @@ opt -passes="pgo-instr-use" -o ${1}.profdata.bc -pgo-test-profile-file=${1}.prof
 
 
 # We now use the profile augmented bc file as input to your pass.
-# opt -load-pass-plugin="${PATH2LIB}" -passes="${PASS}" ${1}.profdata.bc -o ${1}.fplicm.bc > /dev/null
-opt -load-pass-plugin="${PATH2LIB}" -passes="create-struct-pass" ${1}.profdata.bc -o ${1}.fplicm.bc > /dev/null
+opt -load-pass-plugin="${PATH2LIB}" -passes="${PASS}" ${1}.profdata.bc -o ${1}.fplicm.bc > /dev/null
+# opt -load-pass-plugin="${PATH2LIB}" -passes="create-struct-pass" ${1}.profdata.bc -o ${1}.fplicm.bc > /dev/null
 
 # Generate binary excutable before FPLICM: Unoptimzed code
 clang ${1}.ls.bc -o ${1}_no_fplicm 

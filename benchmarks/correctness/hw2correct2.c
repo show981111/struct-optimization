@@ -4,21 +4,31 @@ typedef struct
 {
 	int a;
 	int b;
+	int e[100];
 	long c;
 	char d;
 } Test;
 
+typedef struct
+{
+	int a;
+	int b;
+} Test1;
+
 int main()
 {
-	Test arr[10];
+	Test t;
+	Test1 t1;
 	// => Test_1 arr_1[10];
 	// => Test_2 arr_2[10];
 
 	for (int i = 0; i < 10; i++)
 	{
-		arr[i].a = 10;			 // => arr_1[i].a = 10;
-		arr[i].d = arr[i].a + 3; // => arr_2[i].c = arr_1[i].a + 3;
+		t.a = 10;	   // => arr_1[i].a = 10;
+		t.d = t.a + 3; // => arr_2[i].c = arr_1[i].a + 3;
+		t.e[3] = 12;
 	}
 
+	printf("%d %d %d", t.a, t.d, t.e[3]);
 	return 0;
 }
