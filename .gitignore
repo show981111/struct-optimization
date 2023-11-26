@@ -1,2 +1,6 @@
 .vscode/
 build/
+*.bc
+*.ll
+*.profdata
+/benchmarks/correctness/tmp/*
