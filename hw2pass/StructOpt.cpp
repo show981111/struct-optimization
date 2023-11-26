@@ -136,9 +136,9 @@ void StructOpt::addStructDeclaration(Module &M, LLVMContext &Context)
             profiler.structs[sub.first] = subStruct;
 
             // Temporary: If Struct is not used, it is removed from the IR
-            GlobalVariable *MyStructVar =
-                new GlobalVariable(M, subStruct, false, GlobalValue::InternalLinkage,
-                                   Constant::getNullValue(subStruct), "myStructVar");
+            // GlobalVariable *MyStructVar =
+            //     new GlobalVariable(M, subStruct, false, GlobalValue::InternalLinkage,
+            //                        Constant::getNullValue(subStruct), "myStructVar");
         }
     }
 }
@@ -172,11 +172,9 @@ void StructOpt::fixUsagesOfInstance()
         // for (auto U : item.first->users())
         for (auto U = item.first->user_begin(); U != item.first->user_end();)
         {
-            errs() << " Heelo \n";
             if (auto usingInst = dyn_cast<Instruction>(*U))
             {
                 U++;
-                errs() << "Usage: " << *usingInst << "\n";
                 if (std::string(usingInst->getOpcodeName()) == "getelementptr")
                 {
                     GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(usingInst);

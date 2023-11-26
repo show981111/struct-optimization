@@ -44,6 +44,7 @@ public:
 
     /**
      * Effect: Should create subStructMap & memberToSubstruct
+     * Struct peeing is based on those two variables
      */
     void createSubStructMap(DataLayout &dataLayout);
 
