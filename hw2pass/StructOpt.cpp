@@ -232,3 +232,95 @@ void StructOpt::printSubStructMap()
         }
     }
 }
+
+void StructOpt::addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context){
+    for (const auto &item : profiler.arrayInstances)
+    {
+        if (subStructMap.count(item.first) > 0)
+        {
+            for (const auto &originalInstance : item.second)
+            {
+                errs() << *originalInstance << "\n";
+                IRBuilder<> builder(originalInstance->getNextNode());
+                for (const auto &substruct : subStructMap[item.first])
+                {
+                    errs() << "First " << substruct.first << "\n";
+                    ArrayType *ArrayTy = cast<ArrayType>(originalInstance->getAllocatedType());
+                    ArrayType *arrayType = ArrayType::get(profiler.structs[substruct.first],  ArrayTy->getNumElements());
+
+                    // Create an alloca instruction for the array
+                    AllocaInst *allocaInst = builder.CreateAlloca(arrayType, nullptr);
+                    allocaInst->setAlignment(llvm::Align(originalInstance->getAlignment()));
+                    originalInstanceToNewInstancesArr[originalInstance][substruct.first] = allocaInst;
+                    errs() << *allocaInst << "\n";
+                }
+            }
+        }
+    }
+}
+
+void StructOpt::fixArrayInstanceUsage(){
+    for (auto &item : originalInstanceToNewInstancesArr)
+    {
+        errs() << "Usage of " << *(item.first) << "\n";
+        // for (auto U : item.first->users())
+        for (auto U = item.first->user_begin(); U != item.first->user_end();)
+        {
+            if (auto usingInst = dyn_cast<Instruction>(*U))
+            {
+                U++;
+                if (std::string(usingInst->getOpcodeName()) == "getelementptr")
+                {
+                    GetElementPtrInst *GEP_array = dyn_cast<GetElementPtrInst>(usingInst);
+                    if (!GEP_array->getSourceElementType()->isArrayTy())
+                            continue;
+                    Instruction *usingInstStruct;
+                    for (auto U : usingInst->users()) {
+                        usingInstStruct = dyn_cast<Instruction>(U);
+                    }
+                    errs() << "Found uses " << *usingInstStruct << "\n";
+                    GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(usingInstStruct);
+                    if (!GEP->getSourceElementType()->isStructTy())
+                            continue;
+                    
+                    StructType *StructTy = cast<StructType>(GEP->getSourceElementType());
+                    Value *Operand = GEP->getOperand(GEP->getNumOperands() - 1);
+                    ConstantInt *Index = dyn_cast<ConstantInt>(Operand);
+                    if (Index)
+                    {
+                        IRBuilder<> Builder(GEP->getContext());
+                        MemberIndex oldMemberIndex = Index->getSExtValue();
+                        MemberIndex newMemberIndex = memberToSubstruct[StructTy->getName().str()][oldMemberIndex].index;
+                        std::string substruct = memberToSubstruct[StructTy->getName().str()][oldMemberIndex].substructName;
+                        errs() << StructTy->getName().str() << " Update index: " << oldMemberIndex << " -> " << newMemberIndex << " IN " << substruct << "\n";
+
+                        // [10 x %struct.Test_1]*
+                        PointerType* pointerType = item.second[substruct]->getType();
+                        // [10 x %struct.Test_1]
+                        ArrayType* arrayType = dyn_cast<ArrayType>(pointerType->getElementType());
+                        // %struct.Test_1
+                        Type* elementType = arrayType->getElementType();
+
+                        SetIndexOffsetOfGEP(GEP->getNumOperands() - 1, newMemberIndex, GEP, Builder);
+
+                        GEP_array->setSourceElementType(arrayType);
+                        GEP->setSourceElementType(elementType);
+                        GEP_array->setOperand(GEP_array->getNumOperands() - 3, item.second[substruct]);  
+                        GEP->setOperand(GEP->getNumOperands() - 3, GEP_array);
+                    }
+                    
+                }
+                else
+                {
+                    errs() << *usingInst << "\n";
+                }
+            }
+            else
+            {
+                U++;
+                errs() << "Not Inst?\n";
+            }
+        }
+       
+    }
+}

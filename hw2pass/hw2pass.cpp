@@ -55,11 +55,20 @@ namespace
       errs() << "*** Field Reordering Done ***\n";
 
       DataLayout dataLayout(&M);
+      errs() << "\nCreating Sub Struct Map\n";
       opt.createSubStructMap(dataLayout);
+      errs() << "\nPrinting Sub Struct Map\n";
       opt.printSubStructMap();
+      errs() << "\nAdding Struct Delcaration\n";
       opt.addStructDeclaration(M, Context);
+      errs() << "\nAdd New Instance Declaration\n";
       opt.addNewInstanceDeclaration(M, Context);
+      errs() << "\nAdd New Array Instance Declaration\n";
+      opt.addNewArrayInstanceDeclaration(M, Context);
+      errs() << "\nFixing Usages of Instance\n";
       opt.fixUsagesOfInstance();
+      errs() << "\nFixing Usages of Array\n";
+      opt.fixArrayInstanceUsage();
 
       return PreservedAnalyses::all();
     }

@@ -53,6 +53,8 @@ public:
     std::unordered_map<std::string, std::unordered_set<AllocaInst *>> structInstances;
     std::unordered_map<std::string, StructType *> structs;
 
+    std::unordered_map<std::string, std::unordered_set<AllocaInst *>> arrayInstances;
+
     Profiler() {}
     void profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::Result &bfi);
     void printResult() const;

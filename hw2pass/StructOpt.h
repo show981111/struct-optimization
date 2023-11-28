@@ -30,6 +30,7 @@ private:
      */
     std::unordered_map<std::string, std::unordered_map<MemberIndex, MemberDetail>> memberToSubstruct;
     std::unordered_map<AllocaInst *, std::unordered_map<std::string, AllocaInst *>> originalInstanceToNewInstances;
+    std::unordered_map<AllocaInst *, std::unordered_map<std::string, AllocaInst *>> originalInstanceToNewInstancesArr;
 
     /**
      * Create the new ordering of members in struct.
@@ -63,6 +64,6 @@ public:
     void addNewInstanceDeclaration(Module &M, LLVMContext &Context);
     void fixUsagesOfInstance();
 
-    // void addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context);
-    // void fixArrayInstanceUsage();
+    void addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context);
+    void fixArrayInstanceUsage();
 };

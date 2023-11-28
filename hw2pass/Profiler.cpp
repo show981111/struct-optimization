@@ -6,6 +6,21 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
     {
         // If loading the struct instance, grab it!
         AllocaInst *allocInst = dyn_cast<AllocaInst>(&I);
+        if (allocInst->getAllocatedType()->isArrayTy()){
+            ArrayType *ArrayTy = cast<ArrayType>(allocInst->getAllocatedType());
+            if (ArrayTy->getElementType()->isStructTy()){
+                arrayInstances[ArrayTy->getElementType()->getStructName().str()].insert(allocInst);
+                errs() << "Usage of " << *allocInst << "\n";
+                for (auto U : allocInst->users())
+                {
+                    if (auto usingInst = dyn_cast<Instruction>(U))
+                    {
+                        errs() << *usingInst << "\n";
+                    }
+                }
+                errs() << "----\n";
+            }    
+        }
         if (allocInst->getAllocatedType()->isStructTy())
         {
             StructType *StructTy = cast<StructType>(allocInst->getAllocatedType());
