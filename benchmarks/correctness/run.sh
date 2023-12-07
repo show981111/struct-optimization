@@ -15,10 +15,10 @@ PASS=struct-optimization                  # Choose either -fplicm-correctness ..
 rm -f default.profraw *_prof *_fplicm *.bc *.profdata *_output *.ll cachegrind.*
 
 # Convert source code to bitcode (IR).
-clang -emit-llvm -c ${1}.c -Xclang -disable-O0-optnone -o ${1}.bc
+clang -emit-llvm -c ${1}.c -Xclang -disable-O0-optnone -o ${1}.bc -lm
 
 # Canonicalize natural loops (Ref: llvm.org/doxygen/LoopSimplify_8h_source.html)
-opt -passes='loop-simplify' ${1}.bc -o ${1}.ls.bc
+opt -passes='dce' ${1}.bc -o ${1}.ls.bc
 
 # Instrument profiler passes.
 opt -passes='pgo-instr-gen,instrprof' ${1}.ls.bc -o ${1}.ls.prof.bc
@@ -26,7 +26,7 @@ opt -passes='pgo-instr-gen,instrprof' ${1}.ls.bc -o ${1}.ls.prof.bc
 # Note: We are using the New Pass Manager for these passes! 
 
 # Generate binary executable with profiler embedded
-clang -fprofile-instr-generate ${1}.ls.prof.bc -o ${1}_prof
+clang -fprofile-instr-generate ${1}.ls.prof.bc -o ${1}_prof -lm
 
 # When we run the profiler embedded executable, it generates a default.profraw file that contains the profile data.
 ./${1}_prof > correct_output
@@ -45,9 +45,9 @@ opt -load-pass-plugin="${PATH2LIB}" -passes="${PASS}" ${1}.profdata.bc -o ${1}.f
 opt -passes="dce" ${1}.fplicm.bc -o ${1}.fplicm.bc > /dev/null
 
 # Generate binary excutable before FPLICM: Unoptimzed code
-clang ${1}.ls.bc -o ${1}_no_fplicm 
+clang ${1}.ls.bc -o ${1}_no_fplicm -lm
 # Generate binary executable after FPLICM: Optimized code
-clang ${1}.fplicm.bc -o ${1}_fplicm
+clang ${1}.fplicm.bc -o ${1}_fplicm -lm
 
 # Produce output from binary to check correctness
 ./${1}_fplicm > fplicm_output

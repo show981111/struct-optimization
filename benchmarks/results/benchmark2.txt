@@ -1,0 +1,31 @@
+=========== UNOPTIMIZED (Original) ===========
+
+
+valgrind: ./benchmark2_no_fplicm: No such file or directory
+
+
+=========== UNOPTIMIZED (Profile) ===========
+
+
+valgrind: ./benchmark2_prof: No such file or directory
+
+
+=========== OPTIMIZED ===========
+
+
+valgrind: ./benchmark2_fplicm: No such file or directory
+======== TIME ==========
+
+1. Performance of unoptimized code
+time: cannot run ./benchmark2_no_fplicm: No such file or directory
+Command exited with non-zero status 127
+0.00user 0.00system 0:00.00elapsed 0%CPU (0avgtext+0avgdata 908maxresident)k
+0inputs+8outputs (0major+28minor)pagefaults 0swaps
+
+
+
+2. Performance of optimized code
+time: cannot run ./benchmark2_fplicm: No such file or directory
+Command exited with non-zero status 127
+0.00user 0.00system 0:00.00elapsed 0%CPU (0avgtext+0avgdata 992maxresident)k
+0inputs+8outputs (0major+28minor)pagefaults 0swaps

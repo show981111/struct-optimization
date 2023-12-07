@@ -52,7 +52,7 @@ namespace
       //   }
       // }
 
-      errs() << "*** Field Reordering Done ***\n";
+      // errs() << "*** Field Reordering Done ***\n";
 
       DataLayout dataLayout(&M);
       errs() << "\nCreating Sub Struct Map\n";

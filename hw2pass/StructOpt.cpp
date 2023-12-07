@@ -80,7 +80,7 @@ void StructOpt::structReordering(llvm::Function &F)
     }
 }
 
-void StructOpt::createSubStructMap(DataLayout &dataLayout)
+void StructOpt::peelTop3Elems(DataLayout &dataLayout)
 {
     for (auto &item : profiler.sortedMemberVariables)
     {
@@ -122,6 +122,60 @@ void StructOpt::createSubStructMap(DataLayout &dataLayout)
         subStructMap[structName][substruct1].members = std::move(members_1);
         subStructMap[structName][substruct1].alignment = maxMemberSizeOfM1;
     }
+}
+
+void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
+{
+    for (auto &item : profiler.sortedMemberVariables)
+    {
+        std::string structName = item.first;
+        std::vector<Type *> members_0;
+        std::vector<Type *> members_1;
+        std::string substruct0 = structName + "_0";
+        std::string substruct1 = structName + "_1";
+        uint64_t maxMemberSizeOfM0 = 0;
+        uint64_t maxMemberSizeOfM1 = 0;
+
+        if (item.second.size() < 5)
+            break;
+        int totalAccesses = 0;
+
+        for (auto &member : item.second)
+        {
+            totalAccesses += member.second.accessCounts;
+        }
+        for (auto &member : item.second)
+        {
+            llvm::Align alignment = dataLayout.getABITypeAlign(member.second.type);
+
+            if (((double)member.second.accessCounts / (double)totalAccesses) >= HOTNESS_THRESHOLD)
+            {
+                members_0.push_back(member.second.type);
+                maxMemberSizeOfM0 = std::max(maxMemberSizeOfM0, alignment.value());
+                memberToSubstruct[structName][member.first].substructName = substruct0;
+                memberToSubstruct[structName][member.first].index = members_0.size() - 1;
+            }
+            else
+            {
+                members_1.push_back(member.second.type);
+                maxMemberSizeOfM1 = std::max(maxMemberSizeOfM1, alignment.value());
+                memberToSubstruct[structName][member.first].substructName = substruct1;
+                memberToSubstruct[structName][member.first].index = members_1.size() - 1;
+                errs() << structName << " " << member.first << " -> " << members_1.size() - 1 << "\n";
+            }
+        }
+
+        subStructMap[structName][substruct0].members = std::move(members_0);
+        subStructMap[structName][substruct0].alignment = maxMemberSizeOfM0;
+        subStructMap[structName][substruct1].members = std::move(members_1);
+        subStructMap[structName][substruct1].alignment = maxMemberSizeOfM1;
+    }
+}
+
+void StructOpt::createSubStructMap(DataLayout &dataLayout)
+{
+    // StructOpt::peelTop3Elems(dataLayout);
+    StructOpt::peelBasedOnHotnessThreshold(dataLayout);
 }
 
 void StructOpt::addStructDeclaration(Module &M, LLVMContext &Context)
@@ -233,7 +287,8 @@ void StructOpt::printSubStructMap()
     }
 }
 
-void StructOpt::addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context){
+void StructOpt::addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context)
+{
     for (const auto &item : profiler.arrayInstances)
     {
         if (subStructMap.count(item.first) > 0)
@@ -246,7 +301,7 @@ void StructOpt::addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context){
                 {
                     errs() << "First " << substruct.first << "\n";
                     ArrayType *ArrayTy = cast<ArrayType>(originalInstance->getAllocatedType());
-                    ArrayType *arrayType = ArrayType::get(profiler.structs[substruct.first],  ArrayTy->getNumElements());
+                    ArrayType *arrayType = ArrayType::get(profiler.structs[substruct.first], ArrayTy->getNumElements());
 
                     // Create an alloca instruction for the array
                     AllocaInst *allocaInst = builder.CreateAlloca(arrayType, nullptr);
@@ -259,7 +314,8 @@ void StructOpt::addNewArrayInstanceDeclaration(Module &M, LLVMContext &Context){
     }
 }
 
-void StructOpt::fixArrayInstanceUsage(){
+void StructOpt::fixArrayInstanceUsage()
+{
     for (auto &item : originalInstanceToNewInstancesArr)
     {
         errs() << "Usage of " << *(item.first) << "\n";
@@ -273,16 +329,17 @@ void StructOpt::fixArrayInstanceUsage(){
                 {
                     GetElementPtrInst *GEP_array = dyn_cast<GetElementPtrInst>(usingInst);
                     if (!GEP_array->getSourceElementType()->isArrayTy())
-                            continue;
+                        continue;
                     Instruction *usingInstStruct;
-                    for (auto U : usingInst->users()) {
+                    for (auto U : usingInst->users())
+                    {
                         usingInstStruct = dyn_cast<Instruction>(U);
                     }
                     errs() << "Found uses " << *usingInstStruct << "\n";
                     GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(usingInstStruct);
                     if (!GEP->getSourceElementType()->isStructTy())
-                            continue;
-                    
+                        continue;
+
                     StructType *StructTy = cast<StructType>(GEP->getSourceElementType());
                     Value *Operand = GEP->getOperand(GEP->getNumOperands() - 1);
                     ConstantInt *Index = dyn_cast<ConstantInt>(Operand);
@@ -295,20 +352,19 @@ void StructOpt::fixArrayInstanceUsage(){
                         errs() << StructTy->getName().str() << " Update index: " << oldMemberIndex << " -> " << newMemberIndex << " IN " << substruct << "\n";
 
                         // [10 x %struct.Test_1]*
-                        PointerType* pointerType = item.second[substruct]->getType();
+                        PointerType *pointerType = item.second[substruct]->getType();
                         // [10 x %struct.Test_1]
-                        ArrayType* arrayType = dyn_cast<ArrayType>(pointerType->getElementType());
+                        ArrayType *arrayType = dyn_cast<ArrayType>(pointerType->getElementType());
                         // %struct.Test_1
-                        Type* elementType = arrayType->getElementType();
+                        Type *elementType = arrayType->getElementType();
 
                         SetIndexOffsetOfGEP(GEP->getNumOperands() - 1, newMemberIndex, GEP, Builder);
 
                         GEP_array->setSourceElementType(arrayType);
                         GEP->setSourceElementType(elementType);
-                        GEP_array->setOperand(GEP_array->getNumOperands() - 3, item.second[substruct]);  
+                        GEP_array->setOperand(GEP_array->getNumOperands() - 3, item.second[substruct]);
                         GEP->setOperand(GEP->getNumOperands() - 3, GEP_array);
                     }
-                    
                 }
                 else
                 {
@@ -321,6 +377,5 @@ void StructOpt::fixArrayInstanceUsage(){
                 errs() << "Not Inst?\n";
             }
         }
-       
     }
 }

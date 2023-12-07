@@ -18,6 +18,7 @@ private:
         MemberIndex index;
         std::string substructName;
     };
+    const double HOTNESS_THRESHOLD = 0.4;
     /**
      * Test -> Test_0 : <int ,long ,int>
      *      -> Test_1 : <int, char,long,long >
@@ -45,6 +46,12 @@ private:
     std::unordered_map<std::string, std::vector<int>> getNewOrderOfStruct();
     void fixIndicesBasedOnNewOrder(GetElementPtrInst *GEP, std::unordered_map<std::string, std::vector<int>> &);
     static void SetIndexOffsetOfGEP(unsigned int operandIndex, unsigned int newIndex, GetElementPtrInst *GEP, IRBuilder<> &Builder);
+
+    /**
+     * Different ways of peeling
+     */
+    void peelTop3Elems(DataLayout &dataLayout);
+    void peelBasedOnHotnessThreshold(DataLayout &dataLayout);
 
 public:
     Profiler profiler;

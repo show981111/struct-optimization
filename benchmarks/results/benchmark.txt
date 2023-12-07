@@ -1,0 +1,16 @@
+=========== UNOPTIMIZED (Original) ===========
+
+
+valgrind: ./hw2correct_no_fplicm: No such file or directory
+
+
+=========== UNOPTIMIZED (Profile) ===========
+
+
+valgrind: ./hw2correct_prof: No such file or directory
+
+
+=========== OPTIMIZED ===========
+
+
+valgrind: ./hw2correct_fplicm: No such file or directory

@@ -6,9 +6,11 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
     {
         // If loading the struct instance, grab it!
         AllocaInst *allocInst = dyn_cast<AllocaInst>(&I);
-        if (allocInst->getAllocatedType()->isArrayTy()){
+        if (allocInst->getAllocatedType()->isArrayTy())
+        {
             ArrayType *ArrayTy = cast<ArrayType>(allocInst->getAllocatedType());
-            if (ArrayTy->getElementType()->isStructTy()){
+            if (ArrayTy->getElementType()->isStructTy())
+            {
                 arrayInstances[ArrayTy->getElementType()->getStructName().str()].insert(allocInst);
                 errs() << "Usage of " << *allocInst << "\n";
                 for (auto U : allocInst->users())
@@ -19,7 +21,7 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
                     }
                 }
                 errs() << "----\n";
-            }    
+            }
         }
         if (allocInst->getAllocatedType()->isStructTy())
         {
@@ -77,10 +79,10 @@ void Profiler::profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::
     for (auto &BB : F)
     {
         uint64_t numExecuted = 0;
-        if (bfi.getBlockProfileCount(&BB).has_value())
+        if (bfi.getBlockProfileCount(&BB).hasValue())
         {
             // https://llvm.org/doxygen/BlockFrequencyInfo_8h_source.html get how many times this BB got executed
-            numExecuted = bfi.getBlockProfileCount(&BB).value();
+            numExecuted = bfi.getBlockProfileCount(&BB).getValueOr(0);
         }
 
         if (numExecuted == 0)
