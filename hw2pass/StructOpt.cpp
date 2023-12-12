@@ -393,7 +393,7 @@ void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
                     for (auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr)
                     {
                         subStructMap[ogName][subStructName].members.push_back(ptr->type);
-                        subStructMap[ogName][subStructName].alignment = ptr->size;
+                        subStructMap[ogName][subStructName].alignment = (ptr->size)/8;
                     }
                 }
                 break;
