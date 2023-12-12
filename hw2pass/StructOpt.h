@@ -18,11 +18,28 @@ private:
         MemberIndex index;
         std::string substructName;
     };
-    struct CompareSubStruct {
-        bool operator()(const subStructInfo& lhs, const subStructInfo& rhs) const {
-            if (lhs.size != rhs.size) {
-                return lhs.size < rhs.size; 
-            } else {
+    struct subStructInfo
+    {
+        int size;
+        int mvId;
+        Type *type;
+        subStructInfo(int size_in, int mvId_in, Type *type_in)
+        {
+            size = size_in;
+            mvId = mvId_in;
+            type = type_in;
+        }
+    };
+    struct CompareSubStruct
+    {
+        bool operator()(const subStructInfo &lhs, const subStructInfo &rhs) const
+        {
+            if (lhs.size != rhs.size)
+            {
+                return lhs.size < rhs.size;
+            }
+            else
+            {
                 return lhs.mvId < rhs.mvId;
             }
         }

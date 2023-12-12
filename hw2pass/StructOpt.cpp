@@ -11,7 +11,7 @@ std::unordered_map<std::string, std::vector<int>> StructOpt::getNewOrderOfStruct
             std::string structName = st.first;
             std::vector<Type *> sortedFields;
             std::vector<int> fieldMap(profiler.sortedMemberVariables[structName].size());
-            for (std::pair<unsigned, Profiler::Stat> &item : profiler.sortedMemberVariables[structName])
+            for (const std::pair<unsigned, Profiler::Stat> &item : profiler.sortedMemberVariables[structName])
             {
                 fieldMap[item.first] = sortedFields.size();
                 sortedFields.push_back(item.second.type);
@@ -111,6 +111,7 @@ void StructOpt::addNewInstanceDeclaration(Module &M, LLVMContext &Context)
                 for (const auto &substruct : subStructMap[item.first])
                 {
                     AllocaInst *allocaInst = builder.CreateAlloca(profiler.structs[substruct.first], nullptr);
+                    errs() << "New Alignment: " << substruct.second.alignment << "\n";
                     allocaInst->setAlignment(llvm::Align(substruct.second.alignment));
                     originalInstanceToNewInstances[originalInstance][substruct.first] = allocaInst;
                     errs() << *allocaInst << "\n";
@@ -180,7 +181,8 @@ void StructOpt::printSubStructMap()
 
         for (auto &sub : item.second)
         {
-            errs() << "  " << sub.first << " : ";
+            errs() << "  " << sub.first << " ( Alignment: " << sub.second.alignment << ") "
+                   << " : ";
             for (auto &member : sub.second.members)
             {
                 errs() << *member << ", ";
@@ -357,105 +359,126 @@ void StructOpt::peelTop3Elems(DataLayout &dataLayout)
 
 void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
 {
-    for (auto &e : profiler.sortedMemberVariables) {
+    for (auto &e : profiler.sortedMemberVariables)
+    {
         std::string ogName = e.first;
-        std::set<std::pair<unsigned, Stat>, ComparePairs> mySet = e.second;
-        int mvCount = std::ceil((double)e.second.size() / (double) 3);
+        std::set<std::pair<unsigned, Profiler::Stat>, Profiler::ComparePairs> mySet = e.second;
+        int mvCount = std::ceil((double)e.second.size() / (double)3);
         int nameIdx = 0;
-        while(mySet.size() > 0) {
-          std::string subStructName = e.first + std::to_string(nameIdx++);
-          int counter = 0;
-          std::set<subStructInfo, CompareSubStruct> subStructSet;
+        while (mySet.size() > 0)
+        {
+            std::string subStructName = e.first + std::to_string(nameIdx++);
+            int counter = 0;
+            std::set<subStructInfo, CompareSubStruct> subStructSet;
 
-          auto it = mySet.begin();
+            auto it = mySet.begin();
 
-          //Transfer the mvCount amount of elems from mySet to subStructSet.
-          while(counter < mvCount) {
-            subStructSet.insert(subStructInfo(it->second.size, it->first, it->second.type));
-            auto lmao = it;
-            ++it;
-            mySet.erase(lmao);
-            if(mySet.size() == 0) {
+            // Transfer the mvCount amount of elems from mySet to subStructSet.
+            while (counter < mvCount)
+            {
+                subStructSet.insert(subStructInfo(it->second.size, it->first, it->second.type));
+                auto lmao = it;
+                ++it;
+                mySet.erase(lmao);
+                if (mySet.size() == 0)
+                {
+                    break;
+                }
+                ++counter;
+            }
+            if (mySet.size() == 0)
+            {
+                if (!subStructSet.empty())
+                {
+                    for (auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr)
+                    {
+                        subStructMap[ogName][subStructName].members.push_back(ptr->type);
+                        subStructMap[ogName][subStructName].alignment = ptr->size;
+                    }
+                }
                 break;
             }
-            ++counter;
-          }
-          if(mySet.size() == 0) {
-            if(!subStructSet.empty()) {
-                for(auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr) {
-                  subStructMap[ogName][subStructName].members.push_back(ptr->type);
-                  subStructMap[ogName][subStructName].alignment = ptr->size;
+
+            std::priority_queue<int> paddingAvailable;
+
+            int prevSize = subStructSet.begin()->size;
+            int spaceCleared = prevSize;
+
+            // Investigate the subStructSet and figure out the padding.
+            for (auto ptr = ++subStructSet.begin(); ptr != subStructSet.end(); ++ptr)
+            {
+                int newSize = ptr->size;
+                if (newSize != prevSize)
+                {
+                    paddingAvailable.push(newSize - spaceCleared);
+                    prevSize = newSize;
+                }
+                spaceCleared = newSize * 2;
+            }
+
+            auto toDelete = mySet.begin();
+            bool deleteElem = false;
+
+            // Go through the rest of the mySet and insert if there's right amount of padding
+            for (auto mySetPtr = mySet.begin(); mySetPtr != mySet.end(); ++mySetPtr)
+            {
+                if (deleteElem)
+                {
+                    mySet.erase(toDelete);
+                    deleteElem = false;
+                }
+                if (paddingAvailable.size() > 0)
+                {
+
+                    int largestPadding = paddingAvailable.top();
+                    if (mySetPtr->second.size <= largestPadding)
+                    {
+                        // Get the new padding after fitting in
+                        int newPadding = largestPadding - mySetPtr->second.size;
+                        paddingAvailable.pop();
+                        if (newPadding > 0)
+                        {
+                            paddingAvailable.push(newPadding);
+                        }
+                        // Insert it to the subStruct
+                        // subStructSet.insert(subStructInfo(mySetPtr->second.size, mySetPtr->first));
+                        subStructSet.insert(subStructInfo(mySetPtr->second.size, mySetPtr->first, mySetPtr->second.type));
+                        // erase it from the original mySet
+
+                        toDelete = mySetPtr;
+                        deleteElem = true;
+                    }
+                    else
+                    {
+                        deleteElem = false;
+                    }
+                }
+                else
+                {
+                    break;
                 }
             }
-            break;
-          }
-          
-          std::priority_queue<int> paddingAvailable;
-          
-          int prevSize = subStructSet.begin()->size;
-          int spaceCleared = prevSize;
-          
-          //Investigate the subStructSet and figure out the padding.
-          for(auto ptr = ++subStructSet.begin(); ptr != subStructSet.end(); ++ptr) {
-            int newSize = ptr->size;
-            if(newSize != prevSize) {
-              paddingAvailable.push(newSize - spaceCleared);
-              prevSize = newSize;
-            }
-            spaceCleared = newSize * 2;
-          }
 
-          auto toDelete = mySet.begin();
-          bool deleteElem = false;
-          
-          //Go through the rest of the mySet and insert if there's right amount of padding
-          for(auto mySetPtr = mySet.begin(); mySetPtr != mySet.end(); ++mySetPtr) {
-            if(deleteElem) {
-              mySet.erase(toDelete);
-              deleteElem = false;
+            if (deleteElem)
+            {
+                mySet.erase(toDelete);
             }
-            if (paddingAvailable.size() > 0) {
-    
-                int largestPadding = paddingAvailable.top();
-                if (mySetPtr->second.size <= largestPadding) {
-                  //Get the new padding after fitting in
-                  int newPadding = largestPadding - mySetPtr->second.size;
-                  paddingAvailable.pop();
-                  if(newPadding > 0) {
-                      paddingAvailable.push(newPadding);
-                  }
-                  //Insert it to the subStruct
-                  subStructSet.insert(subStructInfo(mySetPtr->second.size, mySetPtr->first));
-                  //erase it from the original mySet
-                
-                  toDelete = mySetPtr;
-                  deleteElem = true;
-                } else {
-                  deleteElem = false;
-                }
-            } else {
-              break;
-            }
-          }
-
-          if(deleteElem) {
-            mySet.erase(toDelete);
-          }
-          int newIndex = 0;
-          //Go through the defined groups of subStruct and put it into subStructMap
-          for(auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr) {
+            int newIndex = 0;
+            // Go through the defined groups of subStruct and put it into subStructMap
+            for (auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr)
+            {
                 subStructMap[ogName][subStructName].members.push_back(ptr->type);
                 subStructMap[ogName][subStructName].alignment = ptr->size;
                 memberToSubstruct[ogName][ptr->mvId].index = newIndex;
                 ++newIndex;
-                memberToSubstruct[ogName][ptr->mvId].substructName = substructName;
-          }
+                memberToSubstruct[ogName][ptr->mvId].substructName = subStructName;
+            }
         }
-      }
+    }
 }
 
 void StructOpt::createSubStructMap(DataLayout &dataLayout)
 {
-    StructOpt::peelTop3Elems(dataLayout);
-    // StructOpt::peelBasedOnHotnessThreshold(dataLayout);
+    // StructOpt::peelTop3Elems(dataLayout);
+    StructOpt::peelBasedOnHotnessThreshold(dataLayout);
 }

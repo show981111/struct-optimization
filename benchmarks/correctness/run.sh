@@ -2,10 +2,10 @@
 # Run script for Homework 2 EECS 583 Fall 2023
 # Place this script in the benchmarks folder and run it using the name of the file (without the file type)
 # e.g. sh run.sh hw2correct1
-UNIQUENAME="willruiz"
+UNIQUENAME="leeyongs"
 
 # ACTION NEEDED: If the path is different, please update it here.
-PATH2LIB="/home/$UNIQUENAME/lmao/struct-profiler/build/hw2pass/HW2Pass.so"        # Specify your build directory in the project
+PATH2LIB="/home/$UNIQUENAME/proj/build/hw2pass/HW2Pass.so"        # Specify your build directory in the project
 
 # ACTION NEEDED: Choose the correct pass when running.
 PASS=struct-optimization                  # Choose either -fplicm-correctness ...
