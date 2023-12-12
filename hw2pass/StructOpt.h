@@ -18,6 +18,15 @@ private:
         MemberIndex index;
         std::string substructName;
     };
+    struct CompareSubStruct {
+        bool operator()(const subStructInfo& lhs, const subStructInfo& rhs) const {
+            if (lhs.size != rhs.size) {
+                return lhs.size < rhs.size; 
+            } else {
+                return lhs.mvId < rhs.mvId;
+            }
+        }
+    };
     const double HOTNESS_THRESHOLD = 0.4;
     /**
      * Test -> Test_0 : <int ,long ,int>

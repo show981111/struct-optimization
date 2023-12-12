@@ -126,50 +126,101 @@ void StructOpt::peelTop3Elems(DataLayout &dataLayout)
 
 void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
 {
-    for (auto &item : profiler.sortedMemberVariables)
-    {
-        std::string structName = item.first;
-        std::vector<Type *> members_0;
-        std::vector<Type *> members_1;
-        std::string substruct0 = structName + "_0";
-        std::string substruct1 = structName + "_1";
-        uint64_t maxMemberSizeOfM0 = 0;
-        uint64_t maxMemberSizeOfM1 = 0;
+    for (auto &e : profiler.sortedMemberVariables) {
+        std::string ogName = e.first;
+        std::set<std::pair<unsigned, Stat>, ComparePairs> mySet = e.second;
+        int mvCount = std::ceil((double)e.second.size() / (double) 3);
+        int nameIdx = 0;
+        while(mySet.size() > 0) {
+          std::string subStructName = e.first + std::to_string(nameIdx++);
+          int counter = 0;
+          std::set<subStructInfo, CompareSubStruct> subStructSet;
 
-        if (item.second.size() < 5)
+          auto it = mySet.begin();
+
+          //Transfer the mvCount amount of elems from mySet to subStructSet.
+          while(counter < mvCount) {
+            subStructSet.insert(subStructInfo(it->second.size, it->first, it->second.type));
+            auto lmao = it;
+            ++it;
+            mySet.erase(lmao);
+            if(mySet.size() == 0) {
+                break;
+            }
+            ++counter;
+          }
+          if(mySet.size() == 0) {
+            if(!subStructSet.empty()) {
+                for(auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr) {
+                  subStructMap[ogName][subStructName].members.push_back(ptr->type);
+                  subStructMap[ogName][subStructName].alignment = ptr->size;
+                }
+            }
             break;
-        int totalAccesses = 0;
-
-        for (auto &member : item.second)
-        {
-            totalAccesses += member.second.accessCounts;
-        }
-        for (auto &member : item.second)
-        {
-            llvm::Align alignment = dataLayout.getABITypeAlign(member.second.type);
-
-            if (((double)member.second.accessCounts / (double)totalAccesses) >= HOTNESS_THRESHOLD)
-            {
-                members_0.push_back(member.second.type);
-                maxMemberSizeOfM0 = std::max(maxMemberSizeOfM0, alignment.value());
-                memberToSubstruct[structName][member.first].substructName = substruct0;
-                memberToSubstruct[structName][member.first].index = members_0.size() - 1;
+          }
+          
+          std::priority_queue<int> paddingAvailable;
+          
+          int prevSize = subStructSet.begin()->size;
+          int spaceCleared = prevSize;
+          
+          //Investigate the subStructSet and figure out the padding.
+          for(auto ptr = ++subStructSet.begin(); ptr != subStructSet.end(); ++ptr) {
+            int newSize = ptr->size;
+            if(newSize != prevSize) {
+              paddingAvailable.push(newSize - spaceCleared);
+              prevSize = newSize;
             }
-            else
-            {
-                members_1.push_back(member.second.type);
-                maxMemberSizeOfM1 = std::max(maxMemberSizeOfM1, alignment.value());
-                memberToSubstruct[structName][member.first].substructName = substruct1;
-                memberToSubstruct[structName][member.first].index = members_1.size() - 1;
-                errs() << structName << " " << member.first << " -> " << members_1.size() - 1 << "\n";
-            }
-        }
+            spaceCleared = newSize * 2;
+          }
 
-        subStructMap[structName][substruct0].members = std::move(members_0);
-        subStructMap[structName][substruct0].alignment = maxMemberSizeOfM0;
-        subStructMap[structName][substruct1].members = std::move(members_1);
-        subStructMap[structName][substruct1].alignment = maxMemberSizeOfM1;
-    }
+          auto toDelete = mySet.begin();
+          bool deleteElem = false;
+          
+          //Go through the rest of the mySet and insert if there's right amount of padding
+          for(auto mySetPtr = mySet.begin(); mySetPtr != mySet.end(); ++mySetPtr) {
+            if(deleteElem) {
+              mySet.erase(toDelete);
+              deleteElem = false;
+            }
+            if (paddingAvailable.size() > 0) {
+    
+                int largestPadding = paddingAvailable.top();
+                if (mySetPtr->second.size <= largestPadding) {
+                  //Get the new padding after fitting in
+                  int newPadding = largestPadding - mySetPtr->second.size;
+                  paddingAvailable.pop();
+                  if(newPadding > 0) {
+                      paddingAvailable.push(newPadding);
+                  }
+                  //Insert it to the subStruct
+                  subStructSet.insert(subStructInfo(mySetPtr->second.size, mySetPtr->first));
+                  //erase it from the original mySet
+                
+                  toDelete = mySetPtr;
+                  deleteElem = true;
+                } else {
+                  deleteElem = false;
+                }
+            } else {
+              break;
+            }
+          }
+
+          if(deleteElem) {
+            mySet.erase(toDelete);
+          }
+          int newIndex = 0;
+          //Go through the defined groups of subStruct and put it into subStructMap
+          for(auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr) {
+                subStructMap[ogName][subStructName].members.push_back(ptr->type);
+                subStructMap[ogName][subStructName].alignment = ptr->size;
+                memberToSubstruct[ogName][ptr->mvId].index = newIndex;
+                ++newIndex;
+                memberToSubstruct[ogName][ptr->mvId].substructName = substructName;
+          }
+        }
+      }
 }
 
 void StructOpt::createSubStructMap(DataLayout &dataLayout)

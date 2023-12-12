@@ -41,6 +41,20 @@ public:
     {
         u_int64_t accessCounts;
         Type *type;
+        int size;
+    };
+    struct ComparePairs {
+        bool operator()(const std::pair<int, Stat>& lhs, const std::pair<int, Stat>& rhs) const {
+            if (lhs.second.accessCounts != rhs.second.accessCounts) {
+                return lhs.second.accessCounts > rhs.second.accessCounts; 
+            } else {
+                if (lhs.second.size != rhs.second.size) {
+                return lhs.second.size < rhs.second.size;
+                } else {
+                return lhs.first < rhs.first;
+                }
+            }
+        }
     };
     /**
      * Useful API of Type
@@ -48,8 +62,8 @@ public:
      * ty->getStructName().str()
      * ty->getTypeID()
      */
-    std::unordered_map<std::string, std::unordered_map<MemberIndex, Stat>> memberAccessCounts;
-    std::unordered_map<std::string, std::vector<std::pair<MemberIndex, Stat>>> sortedMemberVariables;
+    std::unordered_map<std::string, std::unordered_map<unsigned, Stat>> memberAccessCounts;
+    std::unordered_map<std::string, std::set<std::pair<unsigned, Stat>, ComparePairs>> sortedMemberVariables;
     std::unordered_map<std::string, std::unordered_set<AllocaInst *>> structInstances;
     std::unordered_map<std::string, StructType *> structs;
 

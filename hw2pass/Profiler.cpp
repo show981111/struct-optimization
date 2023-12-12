@@ -68,9 +68,12 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
     {
         // Extract the integer value
         int IndexValue = Index->getSExtValue();
-        // StructTy->getTypeAtIndex(IndexValue)->print(errs());
-        // Now, IndexValue contains the value (in this case, 3)
+        // memberAccessCounts[structName][IndexValue].typeName =
+        StructTy->getTypeAtIndex(IndexValue)->print(errs());
+
+        unsigned int bitWidth = StructTy->getTypeAtIndex(IndexValue)->getIntegerBitWidth();
         memberAccessCounts[structName][IndexValue].accessCounts += numExecuted;
+        memberAccessCounts[structName][IndexValue].size = bitWidth;
     }
 }
 
@@ -97,18 +100,15 @@ void Profiler::profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::
 
 void Profiler::createSortedMemberVariables()
 {
-    for (auto &e : memberAccessCounts)
-    {
+    for (auto &e : memberAccessCounts) {
         std::string structName = e.first;
-        std::vector<std::pair<unsigned, Profiler::Stat>> vec;
-        for (auto &s : e.second)
-        {
-            vec.push_back({s.first, s.second});
+        std::set<std::pair<unsigned, Stat>, ComparePairs> mySet;
+
+        for (auto &s : e.second) {
+          mySet.insert({s.first, s.second});
         }
 
-        std::sort(vec.begin(), vec.end(), [](const auto &a, const auto &b)
-                  { return a.second.accessCounts > b.second.accessCounts; });
-        sortedMemberVariables[structName] = std::move(vec);
+        sortedMemberVariables[structName] = mySet;
     }
 }
 
