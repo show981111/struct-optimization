@@ -61,6 +61,7 @@ private:
      */
     void peelTop3Elems(DataLayout &dataLayout);
     void peelBasedOnHotnessThreshold(DataLayout &dataLayout);
+    void printErrors(GetElementPtrInst *GEP_array, GetElementPtrInst *GEP);
 
 public:
     Profiler profiler;

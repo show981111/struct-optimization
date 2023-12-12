@@ -82,10 +82,10 @@ void Profiler::profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::
     for (auto &BB : F)
     {
         uint64_t numExecuted = 0;
-        if (bfi.getBlockProfileCount(&BB).hasValue())
+        if (bfi.getBlockProfileCount(&BB).has_value())
         {
             // https://llvm.org/doxygen/BlockFrequencyInfo_8h_source.html get how many times this BB got executed
-            numExecuted = bfi.getBlockProfileCount(&BB).getValueOr(0);
+            numExecuted = bfi.getBlockProfileCount(&BB).value();
         }
 
         if (numExecuted == 0)

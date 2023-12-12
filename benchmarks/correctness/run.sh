@@ -15,10 +15,10 @@ PASS=struct-optimization                  # Choose either -fplicm-correctness ..
 rm -f default.profraw *_prof *_fplicm *.bc *.profdata *_output *.ll cachegrind.*
 
 # Convert source code to bitcode (IR).
-clang -emit-llvm -c ${1}.c -Xclang -disable-O0-optnone -o ${1}.bc -lm
+clang -emit-llvm -c ${1}.c -Xclang -disable-O0-optnone -o ${1}.ls.bc -lm
 
 # Canonicalize natural loops (Ref: llvm.org/doxygen/LoopSimplify_8h_source.html)
-opt -passes='dce' ${1}.bc -o ${1}.ls.bc
+# opt -passes='dce' ${1}.bc -o ${1}.ls.bc
 
 # Instrument profiler passes.
 opt -passes='pgo-instr-gen,instrprof' ${1}.ls.bc -o ${1}.ls.prof.bc
