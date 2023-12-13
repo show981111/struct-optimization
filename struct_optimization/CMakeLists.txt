@@ -1,5 +1,5 @@
-add_llvm_pass_plugin(HW2Pass 
-    hw2pass.cpp
+add_llvm_pass_plugin(StructOptimization 
+    pass.cpp
     Profiler.h 
     Profiler.cpp
     StructOpt.h 

@@ -1,57 +1,64 @@
 #include <stdio.h>
-#include <math.h>
-
-// Define a struct for a circle with more than 5 fields
-struct Circle
+#include <stdlib.h>
+typedef struct
 {
-    double radius;
-    double diameter;
-    double area;
-    double circumference;
-    double x_center;
-    double y_center;
-    // Add more fields as needed
-};
+    int a;
+    int b;
+    long c;
+    int d;
+    long f;
+    long g;
+    long h;
+} Test;
+
+typedef struct
+{
+    int a;
+    int b;
+    long c;
+    char d;
+    long f;
+    long g;
+    long h;
+} Hello;
 
 int main()
 {
-    // Define the number of circles in the array
-    const int numCircles = 20;
-
-    // Create an array of struct instances
-    struct Circle circles[20];
-
-    // Initialize each circle with different radii
-    circles[0].radius = 5.0;
-    circles[1].radius = 8.0;
-    circles[2].radius = 10.0;
-
-    // Loop through the array and calculate properties for each circle
-    for (int i = 0; i < numCircles; ++i)
+    Test t[100];
+    Hello h[100];
+    for (int i = 0; i < 50; i++)
     {
-        circles[i].x_center = 0.0; // Assuming the center is at (0, 0) for simplicity
-        circles[i].y_center = 0.0;
+        t[i].a = 0;
+        t[i].d = 0;
+        t[i].f = 0;
+        h[i].a = 0;
+        h[i].b = 0;
+    }
+    for (int i = 0; i < 50; i++)
+    {
+        t[i].a = t[i].a + 10; // => arr_1[i]->a = 10;
+        t[i].d = t[i].a + 3;  // => arr_2[i]->c = arr_1[i]->a + 3;
+        h[i].f = t[i].a + t[i].d;
+        h[i].a = t[i].a + h[i].f;
+        h[i].b = h[i].a + 1;
     }
 
-    for (int i = 0; i < numCircles; ++i)
+    for (int i = 0; i < 50; i++)
     {
-        circles[i].diameter = 2.0 * circles[i].radius;
-        circles[i].area = 3.14 * circles[i].radius * circles[i].radius;
-        circles[i].circumference = 2 * 3.14 * circles[i].radius;
+        t[i].a = t[i].a + 10; // => arr_1[i]->a = 10;
+        t[i].d = t[i].a + 3;  // => arr_2[i]->c = arr_1[i]->a + 3;
+        h[i].f = t[i].a + t[i].d;
+        h[i].a = t[i].a + h[i].f;
     }
 
-    for (int i = 0; i < numCircles; ++i)
+    for (int i = 0; i < 50; i++)
     {
-        // Print the properties of each circle
-        printf("Circle %d Properties:\n", i + 1);
-        printf("Radius: %.2f\n", circles[i].radius);
-        printf("Diameter: %.2f\n", circles[i].diameter);
-        printf("Area: %.2f\n", circles[i].area);
-        printf("Circumference: %.2f\n", circles[i].circumference);
-        printf("\n");
+        t[i].h = t[i].d + 10; // => arr_1[i]->a = 10;
     }
 
-    // Add more print statements or calculations as needed
-
+    for (int i = 0; i < 50; i++)
+    {
+        printf("%d %d %d %d %d\n", t[i].a, t[i].d, t[i].f, h[i].a, h[i].b);
+    }
     return 0;
 }

@@ -1,6 +1,6 @@
 #include "Profiler.h"
 
-void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
+void Profiler::profileInst(Instruction &I, uint64_t numExecuted, DataLayout &dataLayout)
 {
     if (std::string(I.getOpcodeName()) == "alloca")
     {
@@ -12,31 +12,12 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
             if (ArrayTy->getElementType()->isStructTy())
             {
                 arrayInstances[ArrayTy->getElementType()->getStructName().str()].insert(allocInst);
-                errs() << "Usage of " << *allocInst << "\n";
-                for (auto U : allocInst->users())
-                {
-                    if (auto usingInst = dyn_cast<Instruction>(U))
-                    {
-                        errs() << *usingInst << "\n";
-                    }
-                }
-                errs() << "----\n";
             }
         }
         if (allocInst->getAllocatedType()->isStructTy())
         {
             StructType *StructTy = cast<StructType>(allocInst->getAllocatedType());
             structInstances[StructTy->getStructName().str()].insert(allocInst);
-            errs() << "Usage of " << *allocInst << "\n";
-            for (auto U : allocInst->users())
-            {
-                errs() << " Heelo \n";
-                if (auto usingInst = dyn_cast<Instruction>(U))
-                {
-                    errs() << *usingInst << "\n";
-                }
-            }
-            errs() << "----\n";
         }
     }
     if (std::string(I.getOpcodeName()) != "getelementptr")
@@ -51,7 +32,6 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
     StructType *StructTy = cast<StructType>(GEP->getSourceElementType());
     if (memberAccessCounts.count(structName) == 0)
     {
-        errs() << *StructTy << "\n";
         structs[structName] = StructTy;
         int numFields = StructTy->getNumElements();
         for (int i = 0; i < numFields; i++)
@@ -59,6 +39,7 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
             Type *ty = StructTy->getTypeAtIndex(i);
             memberAccessCounts[structName][i].type = ty;
             memberAccessCounts[structName][i].accessCounts = 0;
+            memberAccessCounts[structName][i].size = dataLayout.getTypeAllocSize(ty);
         }
     }
 
@@ -68,16 +49,11 @@ void Profiler::profileInst(Instruction &I, uint64_t numExecuted)
     {
         // Extract the integer value
         int IndexValue = Index->getSExtValue();
-        // memberAccessCounts[structName][IndexValue].typeName =
-        StructTy->getTypeAtIndex(IndexValue)->print(errs());
-
-        unsigned int bitWidth = StructTy->getTypeAtIndex(IndexValue)->getIntegerBitWidth();
         memberAccessCounts[structName][IndexValue].accessCounts += numExecuted;
-        memberAccessCounts[structName][IndexValue].size = bitWidth;
     }
 }
 
-void Profiler::profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::Result &bfi)
+void Profiler::profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::Result &bfi, DataLayout &dataLayout)
 {
     for (auto &BB : F)
     {
@@ -93,19 +69,21 @@ void Profiler::profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::
 
         for (auto &I : BB)
         {
-            profileInst(I, numExecuted);
+            profileInst(I, numExecuted, dataLayout);
         }
     }
 }
 
 void Profiler::createSortedMemberVariables()
 {
-    for (auto &e : memberAccessCounts) {
+    for (auto &e : memberAccessCounts)
+    {
         std::string structName = e.first;
         std::set<std::pair<unsigned, Stat>, ComparePairs> mySet;
 
-        for (auto &s : e.second) {
-          mySet.insert({s.first, s.second});
+        for (auto &s : e.second)
+        {
+            mySet.insert({s.first, s.second});
         }
 
         sortedMemberVariables[structName] = mySet;
@@ -120,7 +98,9 @@ void Profiler::printResult() const
         errs() << "Struct: " << StructEntry.first << "\n";
         for (const auto &MemberEntry : StructEntry.second)
         {
-            errs() << "  Member " << MemberEntry.first << ": " << MemberEntry.second.accessCounts << " times, Type: " << *MemberEntry.second.type << "\n";
+            errs() << "  Member " << MemberEntry.first << ": " << MemberEntry.second.accessCounts << " times, Type: "
+                   << *MemberEntry.second.type << " Size " << MemberEntry.second.size
+                   << "\n";
         }
     }
     errs() << "Struct Instances\n";

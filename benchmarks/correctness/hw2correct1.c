@@ -1,9 +1,8 @@
 #include <stdio.h>
 
 typedef struct
-{ //
+{
 	int a;
-	long padding[1000];
 	int b;
 	long c;
 	char d;
@@ -12,10 +11,19 @@ typedef struct
 
 int main()
 {
+	// int A[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	// int B[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	// int i, j;
+	// j = 0;
+	// for(i = 0; i < 10; i++) {
+	// 	B[i] = A[j] * 11 + i;
+	// 	if(i < 8)
+	// 		j = i;
+	// 	printf("%d\n", B[i]);
+	// }
 
 	Test t;
-	t.c = 98765432101;
-	t.b = 5;
+	t.b = 5; 
 	t.d = 'c';
 	t.a = 123;
 	t.e = 3123;
@@ -24,18 +32,5 @@ int main()
 	long y = t.e;
 	printf("%d %ld", t.a, t.e);
 
-	for (int i = 0; i < 100; i++)
-	{
-		long a = i * i;
-		long b = (i + 1) * 2;
-		long c = (i + 2) * 8;
-		long d = (i + 3) * 32;
-		long e = d * 8;
-		long f = a * 321;
-		printf("%d %ld", t.a++, t.e++);
-	}
-
-	printf("%d %d %ld %c %ld", t.a, t.b, t.c, t.d, t.e);
-	printf("opt X");
 	return 0;
 }

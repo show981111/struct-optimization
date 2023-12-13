@@ -1,12 +1,23 @@
-# Struct Profiler
+# Struct Data layout optimization
 
-Create Visual diagram of IR and run test.
+## Running a benchamrk
+
+Create Visual diagram of IR and run benchmark.
 
 ```sh
-sh test.sh 1
-
-Profiler output stored in global variable 'memberAccessCounts'
-Pre-pass output stored in global variable 'subStructMap'
+sh test.sh 3 # number of benchmark. Currently have 10 benchmarks 
 ```
 
-Format is sh test.sh [test number]
+## Get Cache statistics
+
+Cache statistics are gathered using **Valgrind.** In order to get the result correctly, install the Valgrind first.
+
+### Get the result of benchmarks
+
+After running `test.sh` script, run `compare.sh` script.
+
+```sh
+sh compare.sh 3 # number of benchmark. Currently have 10 benchmarks 
+```
+
+The reuslt will be stored in `/benchmarks/results` directory.

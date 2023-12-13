@@ -44,7 +44,8 @@ private:
             }
         }
     };
-    const double HOTNESS_THRESHOLD = 0.4;
+    const int N = 3;
+    const double HOTNESS_THRESHOLD = 0.2;
     /**
      * Test -> Test_0 : <int ,long ,int>
      *      -> Test_1 : <int, char,long,long >
@@ -76,7 +77,7 @@ private:
     /**
      * Different ways of peeling
      */
-    void peelTop3Elems(DataLayout &dataLayout);
+    void peelTopNElems(DataLayout &dataLayout);
     void peelBasedOnHotnessThreshold(DataLayout &dataLayout);
     void printErrors(GetElementPtrInst *GEP_array, GetElementPtrInst *GEP);
 
@@ -93,6 +94,7 @@ public:
     void createSubStructMap(DataLayout &dataLayout);
 
     void printSubStructMap();
+    void printMemberToSubstruct();
 
     void addStructDeclaration(Module &M, LLVMContext &Context);
     void addNewInstanceDeclaration(Module &M, LLVMContext &Context);
