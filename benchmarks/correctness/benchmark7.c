@@ -9,15 +9,21 @@ struct Vector
     double z;
     double magnitude;
     double direction;
+    char description[100]; // Add a larger field
+    // Exclude some members from usage
+    // int unusedField1;
+    // double unusedField2;
     // Add more fields as needed
 };
 
 // Define a struct for matrix operations
 struct Matrix
 {
-    double elements[3][3];
+    double elements[4][4]; // Increase the matrix size
     double determinant;
     double trace;
+    // Exclude some members from usage
+    // double unusedField3;
     // Add more fields as needed
 };
 
@@ -28,6 +34,8 @@ struct ComplexNumber
     double imaginary;
     double magnitude;
     double phase;
+    // Exclude some members from usage
+    // char unusedField4[50];
     // Add more fields as needed
 };
 
@@ -42,48 +50,36 @@ int main()
     vectors[0].x = 1.0;
     vectors[0].y = 2.0;
     vectors[0].z = 3.0;
+    snprintf(vectors[0].description, sizeof(vectors[0].description), "Vector 1 description");
 
     vectors[1].x = 4.0;
     vectors[1].y = 5.0;
     vectors[1].z = 6.0;
+    snprintf(vectors[1].description, sizeof(vectors[1].description), "Vector 2 description");
 
     vectors[2].x = 7.0;
     vectors[2].y = 8.0;
     vectors[2].z = 9.0;
+    snprintf(vectors[2].description, sizeof(vectors[2].description), "Vector 3 description");
 
     // Manual member assignment for matrices
-    matrices[0].elements[0][0] = 1.0;
-    matrices[0].elements[0][1] = 2.0;
-    matrices[0].elements[0][2] = 3.0;
-    matrices[0].elements[1][0] = 4.0;
-    matrices[0].elements[1][1] = 5.0;
-    matrices[0].elements[1][2] = 6.0;
-    matrices[0].elements[2][0] = 7.0;
-    matrices[0].elements[2][1] = 8.0;
-    matrices[0].elements[2][2] = 9.0;
-
-    matrices[1].elements[0][0] = -1.0;
-    matrices[1].elements[0][1] = -2.0;
-    matrices[1].elements[0][2] = -3.0;
-    matrices[1].elements[1][0] = -4.0;
-    matrices[1].elements[1][1] = -5.0;
-    matrices[1].elements[1][2] = -6.0;
-    matrices[1].elements[2][0] = -7.0;
-    matrices[1].elements[2][1] = -8.0;
-    matrices[1].elements[2][2] = -9.0;
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 4; ++j)
+        {
+            for (int k = 0; k < 4; ++k)
+            {
+                matrices[i].elements[j][k] = i * 10 + j + k;
+            }
+        }
+    }
 
     // Manual member assignment for complex numbers
-    complexNumbers[0].real = 2.0;
-    complexNumbers[0].imaginary = 3.0;
-
-    complexNumbers[1].real = -1.0;
-    complexNumbers[1].imaginary = 4.0;
-
-    complexNumbers[2].real = 0.0;
-    complexNumbers[2].imaginary = -5.0;
-
-    complexNumbers[3].real = 7.0;
-    complexNumbers[3].imaginary = 0.0;
+    for (int i = 0; i < 4; ++i)
+    {
+        complexNumbers[i].real = i + 1;
+        complexNumbers[i].imaginary = i - 1;
+    }
 
     // Perform mathematical operations on vectors
     for (int i = 0; i < 3; ++i)
@@ -124,7 +120,8 @@ int main()
     printf("Vectors:\n");
     for (int i = 0; i < 3; ++i)
     {
-        printf("Vector %d: Magnitude=%.2f, Direction=%.2f radians\n", i + 1, vectors[i].magnitude, vectors[i].direction);
+        printf("Vector %d: Magnitude=%.2f, Direction=%.2f radians, Description=%s\n", i + 1, vectors[i].magnitude,
+               vectors[i].direction, vectors[i].description);
     }
 
     printf("\nMatrices:\n");

@@ -34,7 +34,7 @@ typedef unsigned int MemberIndex;
 class Profiler
 {
 private:
-    void profileInst(Instruction &I, uint64_t numExecuted);
+    void profileInst(Instruction &I, uint64_t numExecuted,DataLayout &dataLayout);
 
 public:
     struct Stat
@@ -70,7 +70,7 @@ public:
     std::unordered_map<std::string, std::unordered_set<AllocaInst *>> arrayInstances;
 
     Profiler() {}
-    void profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::Result &bfi);
+    void profileFunction(llvm::Function &F, llvm::BlockFrequencyAnalysis::Result &bfi, DataLayout &dataLayout);
     void printResult() const;
     void createSortedMemberVariables();
 };

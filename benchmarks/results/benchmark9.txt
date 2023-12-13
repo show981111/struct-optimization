@@ -1,0 +1,96 @@
+=========== UNOPTIMIZED (Original) ===========
+
+
+==2039139== Cachegrind, a cache and branch-prediction profiler
+==2039139== Copyright (C) 2002-2017, and GNU GPL'd, by Nicholas Nethercote et al.
+==2039139== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==2039139== Command: ./benchmark9_no_fplicm
+==2039139== 
+--2039139-- warning: L3 cache found, using its data for the LL simulation.
+--2039139-- warning: specified LL cache: line_size 64  assoc 20  total_size 15,728,640
+--2039139-- warning: simulated LL cache: line_size 64  assoc 30  total_size 15,728,640
+==2039139== 
+==2039139== I   refs:      1,015,005
+==2039139== I1  misses:        1,722
+==2039139== LLi misses:        1,659
+==2039139== I1  miss rate:      0.17%
+==2039139== LLi miss rate:      0.16%
+==2039139== 
+==2039139== D   refs:        340,998  (243,613 rd   + 97,385 wr)
+==2039139== D1  misses:        2,609  (  1,891 rd   +    718 wr)
+==2039139== LLd misses:        2,127  (  1,502 rd   +    625 wr)
+==2039139== D1  miss rate:       0.8% (    0.8%     +    0.7%  )
+==2039139== LLd miss rate:       0.6% (    0.6%     +    0.6%  )
+==2039139== 
+==2039139== LL refs:           4,331  (  3,613 rd   +    718 wr)
+==2039139== LL misses:         3,786  (  3,161 rd   +    625 wr)
+==2039139== LL miss rate:        0.3% (    0.3%     +    0.6%  )
+
+
+=========== UNOPTIMIZED (Profile) ===========
+
+
+==2039140== Cachegrind, a cache and branch-prediction profiler
+==2039140== Copyright (C) 2002-2017, and GNU GPL'd, by Nicholas Nethercote et al.
+==2039140== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==2039140== Command: ./benchmark9_prof
+==2039140== 
+--2039140-- warning: L3 cache found, using its data for the LL simulation.
+--2039140-- warning: specified LL cache: line_size 64  assoc 20  total_size 15,728,640
+--2039140-- warning: simulated LL cache: line_size 64  assoc 30  total_size 15,728,640
+==2039140== 
+==2039140== I   refs:      1,042,422
+==2039140== I1  misses:        2,126
+==2039140== LLi misses:        1,906
+==2039140== I1  miss rate:      0.20%
+==2039140== LLi miss rate:      0.18%
+==2039140== 
+==2039140== D   refs:        355,042  (252,085 rd   + 102,957 wr)
+==2039140== D1  misses:        2,861  (  2,115 rd   +     746 wr)
+==2039140== LLd misses:        2,251  (  1,604 rd   +     647 wr)
+==2039140== D1  miss rate:       0.8% (    0.8%     +     0.7%  )
+==2039140== LLd miss rate:       0.6% (    0.6%     +     0.6%  )
+==2039140== 
+==2039140== LL refs:           4,987  (  4,241 rd   +     746 wr)
+==2039140== LL misses:         4,157  (  3,510 rd   +     647 wr)
+==2039140== LL miss rate:        0.3% (    0.3%     +     0.6%  )
+
+
+=========== OPTIMIZED ===========
+
+
+==2039144== Cachegrind, a cache and branch-prediction profiler
+==2039144== Copyright (C) 2002-2017, and GNU GPL'd, by Nicholas Nethercote et al.
+==2039144== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==2039144== Command: ./benchmark9_fplicm
+==2039144== 
+--2039144-- warning: L3 cache found, using its data for the LL simulation.
+--2039144-- warning: specified LL cache: line_size 64  assoc 20  total_size 15,728,640
+--2039144-- warning: simulated LL cache: line_size 64  assoc 30  total_size 15,728,640
+==2039144== 
+==2039144== I   refs:      1,021,511
+==2039144== I1  misses:        1,727
+==2039144== LLi misses:        1,658
+==2039144== I1  miss rate:      0.17%
+==2039144== LLi miss rate:      0.16%
+==2039144== 
+==2039144== D   refs:        349,047  (248,003 rd   + 101,044 wr)
+==2039144== D1  misses:        2,614  (  1,895 rd   +     719 wr)
+==2039144== LLd misses:        2,128  (  1,502 rd   +     626 wr)
+==2039144== D1  miss rate:       0.7% (    0.8%     +     0.7%  )
+==2039144== LLd miss rate:       0.6% (    0.6%     +     0.6%  )
+==2039144== 
+==2039144== LL refs:           4,341  (  3,622 rd   +     719 wr)
+==2039144== LL misses:         3,786  (  3,160 rd   +     626 wr)
+==2039144== LL miss rate:        0.3% (    0.2%     +     0.6%  )
+======== TIME ==========
+
+1. Performance of unoptimized code
+0.00user 0.00system 0:00.00elapsed 89%CPU (0avgtext+0avgdata 2316maxresident)k
+0inputs+0outputs (0major+88minor)pagefaults 0swaps
+
+
+
+2. Performance of optimized code
+0.00user 0.00system 0:00.00elapsed 100%CPU (0avgtext+0avgdata 2312maxresident)k
+0inputs+0outputs (0major+87minor)pagefaults 0swaps

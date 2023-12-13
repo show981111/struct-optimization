@@ -15,25 +15,43 @@ struct Circle
 
 int main()
 {
-    // Create a circle with various properties
-    struct Circle myCircle;
-    myCircle.radius = 5.0;
+    // Define the number of circles in the array
+    const int numCircles = 20;
 
-    // Calculate additional properties
-    myCircle.diameter = 2.0 * myCircle.radius;
-    myCircle.area = 3.14 * pow(myCircle.radius, 2);
-    myCircle.circumference = 2 * 3.14 * myCircle.radius;
-    myCircle.x_center = 0.0;
-    myCircle.y_center = 0.0;
+    // Create an array of struct instances
+    struct Circle circles[20];
 
-    // Print the properties of the circle
-    printf("Radius: %.2f\n", myCircle.radius);
-    printf("Diameter: %.2f\n", myCircle.diameter);
-    printf("Area: %.2f\n", myCircle.area);
-    printf("Circumference: %.2f\n", myCircle.circumference);
-    printf("Center Coordinates: (%.2f, %.2f)\n", myCircle.x_center, myCircle.y_center);
+    // Initialize each circle with different radii
+    circles[0].radius = 5.0;
+    circles[1].radius = 8.0;
+    circles[2].radius = 10.0;
 
-    // Add more print statements for additional fields
+    // Loop through the array and calculate properties for each circle
+    for (int i = 0; i < numCircles; ++i)
+    {
+        circles[i].x_center = 0.0; // Assuming the center is at (0, 0) for simplicity
+        circles[i].y_center = 0.0;
+    }
+
+    for (int i = 0; i < numCircles; ++i)
+    {
+        circles[i].diameter = 2.0 * circles[i].radius;
+        circles[i].area = 3.14 * circles[i].radius * circles[i].radius;
+        circles[i].circumference = 2 * 3.14 * circles[i].radius;
+    }
+
+    for (int i = 0; i < numCircles; ++i)
+    {
+        // Print the properties of each circle
+        printf("Circle %d Properties:\n", i + 1);
+        printf("Radius: %.2f\n", circles[i].radius);
+        printf("Diameter: %.2f\n", circles[i].diameter);
+        printf("Area: %.2f\n", circles[i].area);
+        printf("Circumference: %.2f\n", circles[i].circumference);
+        printf("\n");
+    }
+
+    // Add more print statements or calculations as needed
 
     return 0;
 }

@@ -29,6 +29,7 @@ namespace
 
       FunctionAnalysisManager &FAM = MAM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
       StructOpt opt;
+      DataLayout dataLayout(&M);
 
       for (Function &F : M)
       {
@@ -37,7 +38,7 @@ namespace
           llvm::BlockFrequencyAnalysis::Result &bfi = FAM.getResult<BlockFrequencyAnalysis>(F);
           llvm::BranchProbabilityAnalysis::Result &bpi = FAM.getResult<BranchProbabilityAnalysis>(F);
           errs() << "NAME " << F.getName() << "\n";
-          opt.profiler.profileFunction(F, bfi);
+          opt.profiler.profileFunction(F, bfi, dataLayout);
         }
       }
       opt.profiler.createSortedMemberVariables();
@@ -54,11 +55,12 @@ namespace
 
       // errs() << "*** Field Reordering Done ***\n";
 
-      DataLayout dataLayout(&M);
       errs() << "\nCreating Sub Struct Map\n";
       opt.createSubStructMap(dataLayout);
       errs() << "\nPrinting Sub Struct Map\n";
       opt.printSubStructMap();
+      errs() << "\nPrinting Member to Sub Struct Map\n";
+      opt.printMemberToSubstruct();
       errs() << "\nAdding Struct Delcaration\n";
       opt.addStructDeclaration(M, Context);
       errs() << "\nAdd New Instance Declaration\n";

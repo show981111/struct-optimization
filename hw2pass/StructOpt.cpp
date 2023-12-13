@@ -313,7 +313,20 @@ void StructOpt::printErrors(GetElementPtrInst *GEP_array, GetElementPtrInst *GEP
     errs() << "======================================================\n";
 }
 
-void StructOpt::peelTop3Elems(DataLayout &dataLayout)
+void StructOpt::printMemberToSubstruct()
+{
+    for (auto &item : memberToSubstruct)
+    {
+        errs() << "Name: " << item.first << ":\n";
+        for (auto &iter : item.second)
+        {
+            errs() << iter.first << " -> " << iter.second.substructName << " IN " << iter.second.index << "\n";
+        }
+        errs() << "\n";
+    }
+}
+
+void StructOpt::peelTopNElems(DataLayout &dataLayout)
 {
     for (auto &item : profiler.sortedMemberVariables)
     {
@@ -325,14 +338,22 @@ void StructOpt::peelTop3Elems(DataLayout &dataLayout)
         uint64_t maxMemberSizeOfM0 = 0;
         uint64_t maxMemberSizeOfM1 = 0;
 
-        if (item.second.size() < 5)
+        if (item.second.size() < 2 * N)
             break;
+
+        u_int64_t maxAccessCnt = 0;
+        for (auto &member : item.second)
+        {
+            maxAccessCnt = std::max(member.second.accessCounts, maxAccessCnt);
+        }
 
         for (auto &member : item.second)
         {
             llvm::Align alignment = dataLayout.getABITypeAlign(member.second.type);
 
-            if (members_0.size() < 3) // top 3 goes to the subStruct
+            // top N , passing relative hotness threshold goes to the hot substruct
+            double relativeHotness = (double)member.second.accessCounts / (double)maxAccessCnt;
+            if (members_0.size() < N && relativeHotness >= HOTNESS_THRESHOLD)
             {
                 members_0.push_back(member.second.type);
                 maxMemberSizeOfM0 = std::max(maxMemberSizeOfM0, alignment.value());
@@ -362,7 +383,7 @@ void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
     for (auto &e : profiler.sortedMemberVariables)
     {
         std::string ogName = e.first;
-        std::set<std::pair<unsigned, Profiler::Stat>, Profiler::ComparePairs> mySet = e.second;
+        std::set<std::pair<unsigned, Profiler::Stat>, Profiler::ComparePairs> &mySet = e.second;
         int mvCount = std::ceil((double)e.second.size() / (double)3);
         int nameIdx = 0;
         while (mySet.size() > 0)
@@ -393,7 +414,10 @@ void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
                     for (auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr)
                     {
                         subStructMap[ogName][subStructName].members.push_back(ptr->type);
-                        subStructMap[ogName][subStructName].alignment = (ptr->size)/8;
+                        subStructMap[ogName][subStructName].alignment = std::max(dataLayout.getABITypeAlign(ptr->type).value(), subStructMap[ogName][subStructName].alignment);
+
+                        memberToSubstruct[ogName][ptr->mvId].index = subStructMap[ogName][subStructName].members.size() - 1;
+                        memberToSubstruct[ogName][ptr->mvId].substructName = subStructName;
                     }
                 }
                 break;
@@ -468,7 +492,7 @@ void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
             for (auto ptr = subStructSet.begin(); ptr != subStructSet.end(); ++ptr)
             {
                 subStructMap[ogName][subStructName].members.push_back(ptr->type);
-                subStructMap[ogName][subStructName].alignment = ptr->size;
+                subStructMap[ogName][subStructName].alignment = std::max(dataLayout.getABITypeAlign(ptr->type).value(), subStructMap[ogName][subStructName].alignment);
                 memberToSubstruct[ogName][ptr->mvId].index = newIndex;
                 ++newIndex;
                 memberToSubstruct[ogName][ptr->mvId].substructName = subStructName;
@@ -479,6 +503,6 @@ void StructOpt::peelBasedOnHotnessThreshold(DataLayout &dataLayout)
 
 void StructOpt::createSubStructMap(DataLayout &dataLayout)
 {
-    // StructOpt::peelTop3Elems(dataLayout);
+    // StructOpt::peelTopNElems(dataLayout);
     StructOpt::peelBasedOnHotnessThreshold(dataLayout);
 }
